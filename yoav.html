@@ -1072,6 +1072,21 @@ button:active{transform:scale(.96)}
   padding:13px 20px;font-size:13px;font-weight:800;font-family:'Heebo',sans-serif;cursor:pointer;
 }
 
+/* ===== MULTI-SELECT CHIPS (קומות ותחומים) ===== */
+.mchips{display:flex;flex-wrap:wrap;gap:6px;padding:6px 2px;max-height:120px;overflow-y:auto}
+.mchip{
+  border:1.5px solid var(--border2);background:var(--surface2);color:var(--navy);
+  border-radius:18px;padding:6px 14px;font-size:12px;font-weight:700;
+  cursor:pointer;transition:all .15s;user-select:none;
+}
+.mchip:hover{border-color:var(--navy)}
+.mchip.on{
+  background:linear-gradient(135deg,var(--navy),var(--navy2));
+  color:#fff;border-color:transparent;box-shadow:var(--sh);
+}
+.mchips-hint{font-size:10.5px;color:var(--muted);font-weight:600;margin-top:2px}
+
+
 
 
 
@@ -1298,9 +1313,15 @@ button:active{transform:scale(.96)}
       <div class="fg"><label>תאריך</label><input type="date" id="fDate"/></div>
       <div class="fg"><label>מבנה</label><select id="fBuild" onchange="onBuildingChange()"><option>10a</option><option>10b</option><option>10c</option></select></div>
     </div>
+    <div class="fg"><label>קומות <span style="color:#dc2626">*</span></label>
+      <div class="mchips" id="fFloorChips"></div>
+      <div class="mchips-hint">אפשר לבחור כמה קומות לבדיקה אחת</div>
+    </div>
+    <div class="fg"><label>תחום הבדיקה <span style="color:#dc2626">*</span></label>
+      <div class="mchips" id="fDomChips"></div>
+      <div class="mchips-hint">אפשר לבחור כמה תחומים – רשימת הצוות תתעדכן בהתאם</div>
+    </div>
     <div class="frow">
-      <div class="fg"><label>קומה</label><select id="fFloor" onchange=""></select></div>
-      <div class="fg"><label>תחום הבדיקה</label><select id="fDomain" onchange="onDomChange()"><option>מאיפנים</option><option>בדיקות</option><option>יועצים</option><option>אחר</option></select></div>
       <div class="fg"><label>סוג הבדיקה <span style="color:#dc2626">*</span></label><select id="fSubDomain"></select></div>
     </div>
     <div class="fg">
@@ -1782,27 +1803,44 @@ function demo(){
   refresh();ss('ok','נתוני דוגמה');hideLoad();
 }
 
+let selFloors=[],selDoms=[];
 function updateFloors(building){
-  const sel=document.getElementById('fFloor');
+  const box=document.getElementById('fFloorChips');
+  selFloors=[];
   const floors=bldFloors[building];
+  let list=[];
   if(floors&&floors.size>0){
-    const sorted=[...floors].map(Number).filter(n=>!isNaN(n)).sort((a,b)=>a-b);
-    if(sorted.length>0){
-      sel.innerHTML=sorted.map(f=>`<option value="${f}">קומה ${f}</option>`).join('');
-      return;
-    }
+    list=[...floors].map(Number).filter(n=>!isNaN(n)).sort((a,b)=>a-b).map(String);
   }
-  sel.innerHTML=[1,2,3,4,5,6,7,8,9].map(f=>`<option value="${f}">קומה ${f}</option>`).join('');
+  if(!list.length) list=['1','2','3','4','5','6','7','8','9'];
+  // קומות מיוחדות שקיימות במבנים
+  ['קרקע','מרתף','גגות','כללי'].forEach(x=>{if(!list.includes(x))list.push(x);});
+  box.innerHTML=list.map(f=>`<div class="mchip" onclick="toggleFloor('${f}',this)">${isNaN(f)?f:'קומה '+f}</div>`).join('');
+}
+function toggleFloor(f,el){
+  const i=selFloors.indexOf(f);
+  if(i>=0){selFloors.splice(i,1);el.classList.remove('on');}
+  else{selFloors.push(f);el.classList.add('on');}
+}
+function toggleDom(d,el){
+  const i=selDoms.indexOf(d);
+  if(i>=0){selDoms.splice(i,1);el.classList.remove('on');}
+  else{selDoms.push(d);el.classList.add('on');}
+  sel=[];renderSel();document.getElementById('ssearch').value='';
+  renderStaff('');updateSubDomains();
 }
 
 function updateEditFloors(building, currentFloor){
   const sel=document.getElementById('efFloor');
   if(!sel) return;
   const floors=bldFloors[building];
-  const list=(floors&&floors.size>0)
-    ?[...floors].map(Number).filter(n=>!isNaN(n)).sort((a,b)=>a-b)
-    :[1,2,3,4,5,6,7,8,9];
-  sel.innerHTML=list.map(f=>`<option value="${f}"${String(f)===String(currentFloor)?' selected':''}>קומה ${f}</option>`).join('');
+  let list=(floors&&floors.size>0)
+    ?[...floors].map(Number).filter(n=>!isNaN(n)).sort((a,b)=>a-b).map(String)
+    :['1','2','3','4','5','6','7','8','9'];
+  ['קרקע','מרתף','גגות','כללי'].forEach(x=>{if(!list.includes(x))list.push(x);});
+  // ערך קיים (כולל כמה קומות כמו "1, 3") – נוסיף כאופציה כדי שלא יאבד
+  if(currentFloor&&!list.includes(String(currentFloor))) list.unshift(String(currentFloor));
+  sel.innerHTML=list.map(f=>`<option value="${f}"${String(f)===String(currentFloor)?' selected':''}>${isNaN(f)?f:'קומה '+f}</option>`).join('');
 }
 
 function onBuildingChange(){
@@ -2564,10 +2602,10 @@ function renderEditSel(){
 
 function fEditStaff(){
   const q=document.getElementById('eStaffSearch').value.toLowerCase();
-  const dom=(document.getElementById('efDomain').value||'').split(' - ')[0];  // תחום ראשי בלבד
+  const domList=(document.getElementById('efDomain').value||'').split(',').map(x=>x.trim().split(' - ')[0]).filter(Boolean);
   const list=document.getElementById('eStaffList');
   const shown=staff.filter(s=>{
-    if(dom&&s.domain!==dom) return false;
+    if(domList.length&&!domList.includes(s.domain)) return false;
     const m=!q||s.name.includes(q)||s.email.toLowerCase().includes(q);
     return m&&!editSel.find(x=>x.name===s.name&&x.email===s.email);
   });
@@ -2829,8 +2867,10 @@ function openModal(){
   sel=[];renderSel();
   document.getElementById('ssearch').value='';
   const doms=[...new Set(staff.map(s=>s.domain).filter(Boolean))].sort();
-  const fd=document.getElementById('fDomain');
-  if(doms.length) fd.innerHTML=doms.map(d=>`<option>${d}</option>`).join('');
+  selDoms=[];
+  document.getElementById('fDomChips').innerHTML=doms.length
+    ? doms.map(d=>`<div class="mchip" onclick="toggleDom('${d}',this)">${d}</div>`).join('')
+    : '<div class="mchips-hint">לא נמצאו תחומים</div>';
   updateSubDomains();
   // עדכן קומות לפי המבנה הנוכחי
   updateFloors(document.getElementById('fBuild').value);
@@ -2867,8 +2907,25 @@ function buildSubOptions(dom,selected){
   return opts;
 }
 function updateSubDomains(){
-  const dom=document.getElementById('fDomain').value;
-  document.getElementById('fSubDomain').innerHTML=buildSubOptions(dom,null);
+  const sel2=document.getElementById('fSubDomain');
+  if(!selDoms.length){
+    sel2.innerHTML='<option value="" selected disabled>בחר קודם תחום...</option>';
+    return;
+  }
+  const multi=selDoms.length>1;
+  const seen=new Set();const items=[];
+  selDoms.forEach(d=>{
+    (SUBDOMAINS[d]||[d]).forEach(s=>{
+      const label=multi?d+': '+s:s;
+      if(!seen.has(label)){seen.add(label);items.push(label);}
+    });
+  });
+  if(items.length===1){
+    sel2.innerHTML=`<option selected>${items[0]}</option><option>אחר</option>`;
+  } else {
+    sel2.innerHTML='<option value="" selected disabled>בחר סוג בדיקה...</option>'+
+      items.map(s=>`<option>${s}</option>`).join('')+'<option>אחר</option>';
+  }
 }
 function onEditDomChange(){
   const dom=document.getElementById('efDomain').value;
@@ -2881,14 +2938,13 @@ function fStaff(){renderStaff(document.getElementById('ssearch').value.toLowerCa
 
 function renderStaff(q){
   const l=document.getElementById('slist');
-  const dom=document.getElementById('fDomain').value;
   const shown=staff.filter(s=>{
-    if(dom&&s.domain!==dom) return false;
+    if(selDoms.length&&!selDoms.includes(s.domain)) return false;
     const m=!q||s.name.includes(q)||s.email.toLowerCase().includes(q);
     return m&&!sel.find(x=>x.name===s.name&&x.email===s.email);
   });
   if(!shown.length){
-    l.innerHTML=`<div style="padding:16px;color:var(--muted);font-size:13px;text-align:center">${dom?'אין עובדים בתחום '+dom:'לא נמצאו עובדים'}</div>`;
+    l.innerHTML=`<div style="padding:16px;color:var(--muted);font-size:13px;text-align:center">${selDoms.length?'אין עובדים בתחומים שנבחרו':'לא נמצאו עובדים'}</div>`;
     return;
   }
   l.innerHTML=shown.map(s=>`
@@ -2917,12 +2973,13 @@ async function submit(){
   if(!isAdmin()){toast("אין הרשאה","err");return;}
   const date=document.getElementById('fDate').value;
   const building=document.getElementById('fBuild').value;
-  const floor=document.getElementById('fFloor').value;
-  const mainDom=document.getElementById('fDomain').value;
+  const floor=selFloors.join(', ');
   const subDom=document.getElementById('fSubDomain').value;
   if(!date||!building||!sel.length){toast('יש למלא תאריך, מבנה ולבחור צוות','warn');return;}
+  if(!selFloors.length){toast('יש לבחור לפחות קומה אחת','warn');return;}
+  if(!selDoms.length){toast('יש לבחור לפחות תחום אחד','warn');return;}
   if(!subDom){toast('יש לבחור סוג בדיקה','warn');document.getElementById('fSubDomain').focus();return;}
-  const domain=mainDom;
+  const domain=selDoms.join(', ');
   const subtype=subDom;
   const status=document.getElementById('fStatus').value;
   const notes=document.getElementById('fNotes').value.trim();
@@ -2966,7 +3023,7 @@ async function submit(){
       saveTxt.textContent='✓ שמור ושלח זימון';
     }
     closeModal();
-    document.getElementById('fFloor').value='';
+    selFloors=[];selDoms=[];
     showAppLoader('מסנכרן נתונים...');
     await sync();   // טעינה מחדש מהשיטס – מספרי שורות מדויקים
     hideAppLoader();
@@ -2975,7 +3032,7 @@ async function submit(){
 
   checks.push({date:parseLocalDate(date),building,floor,domain,crew:[...sel],status,notes,rowIndex:checks.length+2});
   refresh();closeModal();
-  document.getElementById('fFloor').value='';
+  selFloors=[];selDoms=[];
 }
 
 async function resend(i){
