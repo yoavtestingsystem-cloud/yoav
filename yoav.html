@@ -4,6 +4,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>יואב – ניהול בדיקות</title>
+
+<!-- אייקון להוספה למסך הבית ב-iPhone/iPad – אותו לוגו שמופיע בדף הבית -->
+<link rel="apple-touch-icon" href="logoyoav.png">
+<link rel="apple-touch-icon" sizes="180x180" href="logoyoav.png">
+<link rel="apple-touch-icon" sizes="152x152" href="logoyoav.png">
+<link rel="apple-touch-icon" sizes="120x120" href="logoyoav.png">
+<link rel="icon" type="image/png" href="logoyoav.png">
+
+<!-- הפעלה כאפליקציית מסך-מלא כשמוסיפים למסך הבית -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="יואב">
+<meta name="theme-color" content="#0f1b47">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -328,6 +341,42 @@ button:active{transform:scale(.96)}
 .lsort{cursor:pointer;user-select:none;transition:color .15s}
 .lsort:hover{color:var(--navy)}
 .lsort-ic{font-size:9px;margin-right:3px;color:var(--navy);display:inline-block;min-width:8px}
+/* ===== רשימה במובייל – תצוגת כרטיסים ===== */
+@media(max-width:680px){
+  .ltable thead{display:none}
+  .ltable,.ltable tbody{display:block;width:100%}
+  .ltable tr{
+    display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;
+    padding:14px 14px 12px;margin:10px;border-radius:14px;
+    background:var(--surface);border:1px solid var(--border);box-shadow:var(--sh);
+  }
+  .ltable tr:hover td{background:transparent!important}
+  .ltable td{
+    display:block;padding:0;border:none;font-size:13px;min-width:0;
+  }
+  .ltable td[data-label]:not([data-label=""])::before{
+    content:attr(data-label);display:block;font-size:9.5px;font-weight:800;
+    color:var(--muted);letter-spacing:.4px;margin-bottom:3px;text-transform:uppercase;
+  }
+  /* תאריך ובדיקה תופסים שורה מלאה למעלה */
+  .ltable td:nth-child(1){grid-column:1/2}
+  .ltable td:nth-child(2){grid-column:2/3;text-align:left}
+  .ltable td:nth-child(3){grid-column:1/2}
+  .ltable td:nth-child(4){grid-column:2/3;text-align:left}
+  .ltable td:nth-child(5){grid-column:1/2}
+  .ltable td:nth-child(6){grid-column:2/3;text-align:left}
+  .lact-cell{
+    grid-column:1/3!important;margin-top:6px;padding-top:10px!important;
+    border-top:1px dashed var(--border)!important;text-align:center!important;
+  }
+  .lact-cell .inv-btn{width:100%;padding:9px}
+  .lcrew{justify-content:flex-start}
+  td[data-label="תחום"] .lcrew,
+  td[data-label="תחום"]{text-align:left}
+  .lstatus-badge{display:inline-block}
+  .lrow-past{opacity:.75}
+}
+
 
 
 @media(max-width:640px){
@@ -851,8 +900,7 @@ button:active{transform:scale(.96)}
   .gcell{min-width:48px;width:48px;height:100px}
   .dhead{min-width:48px;width:48px}
   .dnum{font-size:14px}
-  .ltable th:nth-child(4),.ltable td:nth-child(4){display:none}
-  .lcrew{max-width:90px}
+  /* הרשימה עוברת לתצוגת כרטיסים במובייל – ראה בלוק .ltable מותאם למובייל למטה */
   .moverlay{align-items:flex-end;padding:0}
   .mbox{border-radius:20px 20px 0 0;max-height:90vh;padding:1.5rem 1.25rem 2rem;animation:slideUp .25s ease}
   @keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
@@ -927,6 +975,9 @@ button:active{transform:scale(.96)}
 
 /* ===== MOBILE PREVIEW (תצוגת מובייל במחשב) ===== */
 .btn-mob-preview{display:inline-flex}
+.named-admin-only{display:none}
+body.admin-named .named-admin-only{display:inline-flex}
+
 .mob-preview-overlay{
   display:none;position:fixed;inset:0;z-index:9000;
   background:rgba(8,15,35,.75);backdrop-filter:blur(6px);
@@ -957,7 +1008,7 @@ button:active{transform:scale(.96)}
 }
 .mob-preview-close:hover{transform:translateY(-1px)}
 @media(max-width:768px){
-  .btn-mob-preview{display:none}
+  .btn-mob-preview{display:none!important}
 }
 
 /* ===== GUIDED TOUR (הדרכה) ===== */
@@ -1335,7 +1386,10 @@ button:active{transform:scale(.96)}
 <div id="loginScreen">
   <div class="login-box">
     <div class="login-logo">
-      <div class="login-logo-mark">י</div>
+      <div class="login-logo-mark">
+        <img src="logoyoav.png" alt="יואב" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" style="width:100%;height:100%;object-fit:cover;border-radius:16px"/>
+        <span style="display:none;align-items:center;justify-content:center;width:100%;height:100%;font-size:28px;font-weight:900;color:#fff">י</span>
+      </div>
       <div class="login-title">יואב</div>
       <div class="login-sub">מערכת ניהול בדיקות מבנים</div>
     </div>
@@ -1378,9 +1432,9 @@ button:active{transform:scale(.96)}
   <div class="hdr-end">
     <div class="status-chip"><div class="sdot" id="sdot"></div><span id="stxt">טוען...</span></div>
     <button class="btn-hdr" id="tourBtn" onclick="startTour()" title="הדרכה על המערכת">❓ הדרכה</button>
-    <button class="btn-hdr btn-mob-preview" onclick="toggleMobilePreview()" title="תצוגה מקדימה כמו במובייל">📱 מובייל</button>
+    <button class="btn-hdr btn-mob-preview named-admin-only" onclick="toggleMobilePreview()" title="תצוגה מקדימה כמו במובייל">📱 מובייל</button>
     <button class="btn-hdr" onclick="syncData()">↻ רענון</button>
-    <button class="btn-hdr admin-only" onclick="openImport()" title="ייבוא בדיקות מקובץ אקסל">📥 ייבוא מאקסל</button>
+    <button class="btn-hdr named-admin-only" onclick="openImport()" title="ייבוא בדיקות מקובץ אקסל">📥 ייבוא מאקסל</button>
     <button class="btn-new btn-hdr-new admin-only" onclick="openModal()">＋ בדיקה חדשה</button>
   </div>
 </header>
@@ -1744,6 +1798,32 @@ function col(d){
   return DC[key]||'#64748b';
 }
 
+// ===== צבעים לבדיקות עם כמה תחומים – מיזוג גרדיאנטי =====
+function domainColors(d){
+  const parts=String(d||'').split(',').map(x=>x.trim().split(' - ')[0].trim()).filter(Boolean);
+  const colors=[...new Set(parts.map(p=>DC[p]||'#64748b'))];
+  return colors.length?colors:['#64748b'];
+}
+function colPrimary(d){return domainColors(d)[0];}
+function colBg(d){
+  const cs=domainColors(d);
+  return cs.length>1?`linear-gradient(135deg,${cs.join(',')})`:cs[0];
+}
+function hexToRgb(hex){
+  const h=hex.replace('#','');
+  const n=parseInt(h.length===3?h.split('').map(c=>c+c).join(''):h,16);
+  return [(n>>16)&255,(n>>8)&255,n&255];
+}
+function colBgAlpha(d,alpha){
+  const cs=domainColors(d);
+  if(cs.length===1){
+    const [r,g,b]=hexToRgb(cs[0]);
+    return `rgba(${r},${g},${b},${alpha})`;
+  }
+  const rgbaStops=cs.map(c=>{const [r,g,b]=hexToRgb(c);return `rgba(${r},${g},${b},${alpha})`;});
+  return `linear-gradient(135deg,${rgbaStops.join(',')})`;
+}
+
 let checks=[],staff=[],blds=[],bldFloors={},sel=[];
 let Y,M,selD;
 
@@ -1872,6 +1952,13 @@ function applyRoleUI(){
       el.style.display=admin?'':'none';
     }
   });
+
+  // אלמנטים שמיועדים אך ורק למשתמש "אדמין" (שם המשתמש עצמו, לא הרשאה) – עמיד לרווחים/סימני כיווניות/אותיות
+  const cleanUser=(currentUser||'').replace(/[\u200e\u200f\u202a-\u202e]/g,'').trim().toLowerCase();
+  const isNamedAdmin=cleanUser==='אדמין'||cleanUser==='admin';
+  console.log('בדיקת "אדמין" בשם משתמש:', JSON.stringify(currentUser), '→ נקי:', JSON.stringify(cleanUser), '→ תואם:', isNamedAdmin);
+  document.body.classList.toggle('admin-named',isNamedAdmin);
+
   document.getElementById('stxt').textContent=(admin?'👑 מנהל':'👤 צופה')+' | '+currentUser;
   if(admin) toast('ברוך הבא מנהל '+currentUser+' 👑','ok');
   else toast('ברוך הבא '+currentUser,'ok');
@@ -2167,7 +2254,7 @@ function renderMonth(){
     const evs=map[d]||[];
     let evHtml=evs.slice(0,3).map(c=>{
       const idx=checks.indexOf(c);
-      return `<div class="month-ev" style="background:${col(c.domain)}" onclick="event.stopPropagation();showDpop(event,${idx})"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.7);margin-left:4px;vertical-align:middle"></span>${c.title||'בדיקה'} ב${c.building}</div>`;
+      return `<div class="month-ev" style="background:${colBg(c.domain)}" onclick="event.stopPropagation();showDpop(event,${idx})"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.7);margin-left:4px;vertical-align:middle"></span>${c.title||'בדיקה'} ב${c.building}</div>`;
     }).join('');
     if(evs.length>3) evHtml+=`<div class="month-more">+${evs.length-3} נוספות</div>`;
     h+=`<div class="${cls}" onclick="cellClickDate('${dateStr}')"><div class="month-cell-num">${d}</div>${evHtml}</div>`;
@@ -2245,7 +2332,7 @@ function renderG(){
     const evHtml=dayChecks.map(c=>{
       const idx=checks.indexOf(c);
       const names=c.crew.map(p=>p.name).join(', ');
-      return`<div class="wd-ev" style="background:${col(c.domain)}" onclick="event.stopPropagation();showDpop(event,${idx})">
+      return`<div class="wd-ev" style="background:${colBg(c.domain)}" onclick="event.stopPropagation();showDpop(event,${idx})">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
           <div class="wd-ev-bld">${c.title||'בדיקה'} ב${c.building} | ק׳${c.floor}</div>
           <span title="${c.status||'טרם התחיל'}" style="width:9px;height:9px;border-radius:50%;background:#fff;flex-shrink:0;opacity:.9;box-shadow:0 0 4px rgba(0,0,0,.3),inset 0 0 0 2.5px ${statusColor(c.status)};display:block"></span>
@@ -2271,7 +2358,7 @@ function renderG(){
 
   const doms=[...new Set(f.map(c=>c.domain))];
   document.getElementById('gleg').innerHTML=
-    doms.map(d=>`<div class="litem"><div class="ldot" style="background:${col(d)}"></div>${d}</div>`).join('')+
+    doms.map(d=>`<div class="litem"><div class="ldot" style="background:${colBg(d)}"></div>${d}</div>`).join('')+
     '<div class="ltip">לחץ על ＋ להוספת בדיקה • לחץ על כרטיסייה לפרטים</div>';
 }
 
@@ -2429,10 +2516,10 @@ function showDpop(e,idx){
   document.getElementById('dptitle').textContent=`${c.title||'בדיקה'} ב${c.building} | קומה ${c.floor}`;
   const badge=document.getElementById('dpbadge');
   badge.textContent=c.date?c.date.toLocaleDateString('he-IL'):'';
-  badge.style.background=col(c.domain)+'28';badge.style.color=col(c.domain);
+  badge.style.background=colBgAlpha(c.domain,.16);badge.style.color=colPrimary(c.domain);
   const crewHtml=c.crew.map(p=>`
     <div class="dcrew">
-      <div class="dcrew-av" style="background:${col(c.domain)}">${p.name.charAt(0)}</div>
+      <div class="dcrew-av" style="background:${colBg(c.domain)}">${p.name.charAt(0)}</div>
       <div class="dcrew-info"><div class="dcrew-name">${p.name}</div><div class="dcrew-email">${p.email}</div></div>
     </div>`).join('');
   document.getElementById('dpbody').innerHTML=`
@@ -2440,7 +2527,7 @@ function showDpop(e,idx){
     <div class="drow"><span class="dico">🏗️</span><div class="dval">קומה ${c.floor}<small>קומה</small></div></div>
     <div class="drow"><span class="dico">📊</span><div class="dval"><span class="status-badge status-${c.status.replace(/[^א-ת]/g,'')}" style="background:${statusColor(c.status)}">${statusLabel(c.status)}</span><small>סטטוס</small></div></div>
     <div class="drow"><span class="dico">🔧</span><div class="dval" style="display:flex;align-items:center;gap:8px">
-      <span style="display:inline-block;width:9px;height:9px;border-radius:3px;background:${col(c.domain)}"></span>
+      <span style="display:inline-block;width:9px;height:9px;border-radius:3px;background:${colBg(c.domain)}"></span>
       ${c.domain}${c.subtype&&c.subtype!==c.domain?' · '+c.subtype:''}<small>תחום</small></div></div>
     <div class="dcrew-section"><div class="dcrew-label">👷 צוות הבדיקה</div>${crewHtml}</div>`;
   document.getElementById('dpinvbtn').onclick=()=>resendDpop();
@@ -2498,7 +2585,8 @@ function closeDocPreview(){
 let _impRows=[];
 
 function openImport(){
-  if(!isAdmin()){toast('אין הרשאה לייבוא','err');return;}
+  const cleanUser=(currentUser||'').replace(/[\u200e\u200f\u202a-\u202e]/g,'').trim().toLowerCase();
+  if(cleanUser!=='אדמין'&&cleanUser!=='admin'){toast('ייבוא מאקסל זמין רק למשתמש אדמין','err');return;}
   _impRows=[];
   document.getElementById('impFoot').style.display='none';
   document.getElementById('impBody').innerHTML=`
@@ -3058,15 +3146,15 @@ function renderPpop(period){
   const srt=[...filtered].sort((a,b)=>a.date-b.date);
   body.innerHTML=srt.map(c=>{
     const crew=c.crew.map(p=>`<div class="pcheck-crew-tag">
-      <div class="pct-av" style="background:${col(c.domain)}">${p.name.charAt(0)}</div>
+      <div class="pct-av" style="background:${colBg(c.domain)}">${p.name.charAt(0)}</div>
       <span class="pct-name">${p.name}</span>
     </div>`).join('');
-    return`<div class="pcheck-card" style="border-right-color:${col(c.domain)}">
+    return`<div class="pcheck-card" style="border-right-color:${colPrimary(c.domain)}">
       <div class="pcheck-top">
         <span class="pcheck-date">${c.date.toLocaleDateString('he-IL',{weekday:'short',day:'numeric',month:'short'})}</span>
         <span class="pcheck-bld">${c.building}</span>
         <span class="pcheck-floor">קומה ${c.floor}</span>
-        <span class="pcheck-domain" style="background:${col(c.domain)}">${c.domain}</span>
+        <span class="pcheck-domain" style="background:${colBg(c.domain)}">${c.domain}</span>
       </div>
       <div class="pcheck-crew">${crew}</div>
     </div>`;
@@ -3150,13 +3238,13 @@ function renderL(){
         + (names.length>3?`<span class="lavatar lavatar-more">+${names.length-3}</span>`:'')
       : '<span class="lno-crew">—</span>';
     return`<tr class="lrow ${isPast?'lrow-past':''}" onclick="openEditModal(${realIdx})" title="לחץ לעריכת הבדיקה">
-      <td><div class="ldate">${c.date?c.date.toLocaleDateString('he-IL',{day:'2-digit',month:'2-digit',year:'2-digit'}):'–'}</div>${isPast?'<div class="lpast-tag">עבר</div>':''}</td>
-      <td><div class="ltitle-cell">${c.title?('<b>'+c.title+'</b>'):'<span style=\"color:var(--muted)\">בדיקה</span>'}${c.fileUrl?' <span title="יש מסמך מצורף">📎</span>':''}</div></td>
-      <td><div class="lbld">${c.building}</div><div class="lfloor">קומה ${c.floor}</div></td>
-      <td><span class="badge" style="background:${col(c.domain)}">${c.domain}</span>${c.subtype?`<div class="lsubtype">${c.subtype}</div>`:''}</td>
-      <td><div class="lcrew">${crewHtml}</div></td>
-      <td><span class="lstatus-badge" style="background:${statusColor(status)}">${status}</span></td>
-      <td onclick="event.stopPropagation()"><button class="inv-btn" onclick="resend(${sorted.indexOf(c)})">📅 זימון</button></td>
+      <td data-label="תאריך"><div class="ldate">${c.date?c.date.toLocaleDateString('he-IL',{day:'2-digit',month:'2-digit',year:'2-digit'}):'–'}</div>${isPast?'<div class="lpast-tag">עבר</div>':''}</td>
+      <td data-label="בדיקה"><div class="ltitle-cell">${c.title?('<b>'+c.title+'</b>'):'<span style=\"color:var(--muted)\">בדיקה</span>'}${c.fileUrl?' <span title="יש מסמך מצורף">📎</span>':''}</div></td>
+      <td data-label="מבנה"><div class="lbld">${c.building}</div><div class="lfloor">קומה ${c.floor}</div></td>
+      <td data-label="תחום"><span class="badge" style="background:${colBg(c.domain)}">${c.domain}</span>${c.subtype?`<div class="lsubtype">${c.subtype}</div>`:''}</td>
+      <td data-label="צוות"><div class="lcrew">${crewHtml}</div></td>
+      <td data-label="סטטוס"><span class="lstatus-badge" style="background:${statusColor(status)}">${status}</span></td>
+      <td data-label="" class="lact-cell" onclick="event.stopPropagation()"><button class="inv-btn" onclick="resend(${sorted.indexOf(c)})">📅 זימון</button></td>
     </tr>`;
   }).join('');
 }
