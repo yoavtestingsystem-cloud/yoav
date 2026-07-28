@@ -309,6 +309,36 @@ button:active{transform:scale(.96)}
 }
 #lstatusFilter:hover{border-color:var(--navy)}
 .lcount{font-size:12px;font-weight:800;color:var(--muted);white-space:nowrap;padding:0 4px}
+.lexport-btn{
+  background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;border:none;
+  border-radius:var(--rsm);padding:9px 14px;font-size:12.5px;font-weight:800;
+  font-family:'Heebo',sans-serif;cursor:pointer;white-space:nowrap;box-shadow:var(--sh);
+  transition:all .18s;
+}
+.lexport-btn:hover{transform:translateY(-1px);box-shadow:var(--sh2)}
+
+/* ===== תפריט כפתור פלוס (בדיקה חדשה / הפצה חדשה) ===== */
+.plus-menu-overlay{
+  display:none;position:fixed;inset:0;z-index:8400;
+}
+.plus-menu-overlay.on{display:block}
+.plus-menu{
+  position:fixed;width:min(300px,88vw);
+  background:var(--surface);border-radius:16px;overflow:hidden;
+  box-shadow:0 20px 50px rgba(0,0,0,.3);border:1px solid var(--border);
+  animation:popIn2 .18s ease;
+}
+.plus-menu-item{
+  display:flex;align-items:center;gap:12px;width:100%;
+  padding:14px 16px;background:none;border:none;cursor:pointer;
+  text-align:right;transition:background .15s;
+}
+.plus-menu-item:hover{background:var(--surface2)}
+.plus-menu-item+.plus-menu-item{border-top:1px solid var(--border)}
+.pmi-ic{font-size:22px;flex-shrink:0}
+.pmi-txt{display:flex;flex-direction:column;gap:2px}
+.pmi-txt b{font-size:13.5px;color:var(--navy)}
+.pmi-txt small{font-size:11px;color:var(--muted);font-weight:600}
 
 .lrow{cursor:pointer;transition:background .15s}
 .lrow:hover td{background:var(--surface2)!important}
@@ -1435,7 +1465,7 @@ button:active{transform:scale(.96)}
     <button class="btn-hdr btn-mob-preview named-admin-only" onclick="toggleMobilePreview()" title="תצוגה מקדימה כמו במובייל">📱 מובייל</button>
     <button class="btn-hdr" onclick="syncData()">↻ רענון</button>
     <button class="btn-hdr named-admin-only" onclick="openImport()" title="ייבוא בדיקות מקובץ אקסל">📥 ייבוא מאקסל</button>
-    <button class="btn-new btn-hdr-new admin-only" onclick="openModal()">＋ בדיקה חדשה</button>
+    <button class="btn-new btn-hdr-new admin-only" onclick="togglePlusMenu(event,this)">＋ בדיקה חדשה</button>
   </div>
 </header>
 
@@ -1529,6 +1559,7 @@ button:active{transform:scale(.96)}
           <option>נדחה</option>
         </select>
         <div class="lcount" id="lcount"></div>
+        <button class="lexport-btn" onclick="exportToExcel()" title="ייצוא הרשימה המוצגת לקובץ אקסל">⬇️ ייצוא לאקסל</button>
       </div>
       <table class="ltable">
         <thead><tr>
@@ -1546,7 +1577,19 @@ button:active{transform:scale(.96)}
   </div>
 </div>
 
-<button class="fab admin-only" onclick="openModal()">＋</button>
+<button class="fab admin-only" onclick="togglePlusMenu(event,this)">＋</button>
+<div class="plus-menu-overlay" id="plusMenuOverlay" onclick="closePlusMenu()">
+  <div class="plus-menu" id="plusMenu" onclick="event.stopPropagation()">
+    <button class="plus-menu-item" onclick="closePlusMenu();openModal()">
+      <span class="pmi-ic">📋</span>
+      <span class="pmi-txt"><b>בדיקה חדשה</b><small>יצירת בדיקה עם צוות וזימון ליומן</small></span>
+    </button>
+    <button class="plus-menu-item" onclick="closePlusMenu();openDistModal()">
+      <span class="pmi-ic">📤</span>
+      <span class="pmi-txt"><b>הפצה חדשה</b><small>הפצת דו"ח למנהל – זימון יום שלם</small></span>
+    </button>
+  </div>
+</div>
 
 <div class="moverlay" id="moverlay" onclick="if(event.target===this)closeModal()">
   <div class="mbox">
@@ -1556,9 +1599,12 @@ button:active{transform:scale(.96)}
     </div>
     <div class="frow">
       <div class="fg"><label>תאריך</label><input type="date" id="fDate"/></div>
-      <div class="fg"><label>מבנה</label><select id="fBuild" onchange="onBuildingChange()"><option>10a</option><option>10b</option><option>10c</option></select></div>
+      <div class="fg"><label>סבב</label><select id="fRound"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
     </div>
-    <div class="fg"><label>שם הבדיקה (רשות)</label><input type="text" id="fTitle" placeholder='ברירת מחדל: "בדיקה"' maxlength="40"/></div>
+    <div class="fg"><label>מבנה <span style="color:#dc2626">*</span></label>
+      <div class="mchips" id="fBuildChips"></div>
+      <div class="mchips-hint">אפשר לבחור כמה מבנים לבדיקה אחת</div>
+    </div>
     <div class="fg"><label>קומות <span style="color:#dc2626">*</span></label>
       <div class="mchips" id="fFloorChips"></div>
       <div class="mchips-hint">אפשר לבחור כמה קומות לבדיקה אחת</div>
@@ -1570,6 +1616,7 @@ button:active{transform:scale(.96)}
     <div class="frow">
       <div class="fg"><label>סוג הבדיקה <span style="color:#dc2626">*</span></label><select id="fSubDomain"></select></div>
     </div>
+    <div class="fg"><label>שם הבדיקה (רשות)</label><input type="text" id="fTitle" placeholder='ברירת מחדל: "בדיקה"' maxlength="40"/></div>
     <div class="fg">
       <label>אנשי צוות נבחרים</label>
       <div id="selStaff" class="stags"><div class="nostaf">טרם נבחרו</div></div>
@@ -1615,6 +1662,7 @@ button:active{transform:scale(.96)}
     <div class="dpop-foot">
       <button class="dpop-inv-btn" id="dpprevbtn" style="display:none;background:linear-gradient(135deg,#0891b2,#0e7490)">👁️ הצג מקדימה של הקובץ</button>
       <button class="dpop-inv-btn" id="dpdocbtn" style="display:none;background:linear-gradient(135deg,#16a34a,#15803d)">📄 הצג קובץ מלא</button>
+      <button class="dpop-inv-btn" id="dpwabtn" style="background:linear-gradient(135deg,#25d366,#1da851)">💬 שלח לקבוצת הוואטסאפ</button>
       <button class="dpop-inv-btn" id="dpinvbtn"><div class="btn-spinner"></div>📅 שלח זימון ליומן</button>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
         <button class="dpop-edit-btn admin-only" id="dpeditbtn"><div class="btn-spinner"></div>✏️ ערוך בדיקה</button>
@@ -1644,6 +1692,39 @@ button:active{transform:scale(.96)}
 </div>
 
 <!-- EDIT MODAL -->
+<div class="moverlay" id="distOverlay" onclick="if(event.target===this)closeDistModal()">
+  <div class="mbox" style="max-width:420px">
+    <div class="mhdr">
+      <h2>📤 הפצה לדו"ח למנהל</h2>
+      <button class="mclose" onclick="closeDistModal()">✕</button>
+    </div>
+    <p style="font-size:12.5px;color:var(--muted);margin:-4px 0 14px;line-height:1.6">
+      יצירת הפצה תשלח זימון ליומן ליום שלם ותתעד את ההפצה במערכת.
+    </p>
+    <div class="fg"><label>שם ההפצה</label>
+      <input type="text" id="distName" value='הפצה לדו"ח למנהל' maxlength="60"/>
+    </div>
+    <div class="fg"><label>תאריך <span style="color:#dc2626">*</span></label>
+      <input type="date" id="distDate"/>
+    </div>
+    <div class="fg"><label>מבנה <span style="color:#dc2626">*</span></label>
+      <select id="distBuild" onchange="updateDistFloors()"></select>
+    </div>
+    <div class="fg"><label>קומה <span style="color:#dc2626">*</span></label>
+      <select id="distFloor"></select>
+    </div>
+    <div class="fg">
+      <label>נמענים לזימון <span style="color:#dc2626">*</span></label>
+      <div id="distSelStaff" class="stags"><div class="nostaf">טרם נבחרו</div></div>
+      <div class="ssearch-wrap"><input class="ssearch" id="distSearch" type="text" placeholder="🔍 חפש עובד..." oninput="fDistStaff()"/></div>
+      <div class="slist" id="distSlist"></div>
+    </div>
+    <button class="btn-save" id="distSaveBtn" onclick="saveDistribution()" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:8px">
+      <div class="btn-spinner" style="border-top-color:#fff"></div>
+      <span id="distSaveBtnTxt">📤 צור הפצה ושלח זימון</span>
+    </button>
+  </div>
+</div>
 <div class="moverlay" id="editOverlay" onclick="if(event.target===this){document.getElementById('editOverlay').classList.remove('on');document.body.style.overflow=''}">
   <div class="mbox">
     <div class="mhdr">
@@ -1653,13 +1734,14 @@ button:active{transform:scale(.96)}
     <div class="frow">
       <div class="fg"><label>תאריך</label><input type="date" id="efDate"/></div>
       <div class="fg"><label>מבנה</label><select id="efBuild" onchange="updateEditFloors(this.value,'')"><option>10a</option><option>10b</option><option>10c</option></select></div>
+      <div class="fg"><label>סבב</label><select id="efRound"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
     </div>
     <div class="frow">
-      <div class="fg"><label>שם הבדיקה (רשות)</label><input type="text" id="efTitle" placeholder='ברירת מחדל: "בדיקה"' maxlength="40"/></div>
       <div class="fg"><label>קומה</label><select id="efFloor"></select></div>
       <div class="fg"><label>תחום הבדיקה</label><select id="efDomain" onchange="onEditDomChange()"><option>מאיפנים</option><option>בדיקות</option><option>יועצים</option><option>אחר</option></select></div>
       <div class="fg"><label>סוג הבדיקה <span style="color:#dc2626">*</span></label><select id="efSubDomain"></select></div>
     </div>
+    <div class="fg"><label>שם הבדיקה (רשות)</label><input type="text" id="efTitle" placeholder='ברירת מחדל: "בדיקה"' maxlength="40"/></div>
     <div class="fg">
       <label>אנשי צוות</label>
       <div id="eSelStaff" class="stags"><div class="nostaf">טרם נבחרו</div></div>
@@ -1740,7 +1822,7 @@ button:active{transform:scale(.96)}
 
 <script>
 // ============================================================
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwCwwrOni3g0_KDhgOIOtnFC9Rwfu0WtRMY-zCewnGQyQXKGgzhM6b02i-T8fjrAol2vw/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxXc6-j2wBEIKzULSIvuCW2afqux7zFfCvQKNKivbG7hvYK65p8d7wy98KzJRNH8SbTDw/exec';
 // ============================================================
 
 
@@ -2034,8 +2116,9 @@ function parseChecks(raw){
       crew:ns.map((n,idx)=>({name:n,email:es[idx]||''})),
       status:(r[7]||'טרם התחיל').toString().trim(),  // עמודה H
       notes:(r[8]||'').toString().trim(),                // עמודה I
-      fileUrl:(r[10]||'').toString().trim(),             // עמודה K – מסמך בדיקה בדרייב
-      title:(r[11]||'').toString().trim()                // עמודה L – שם בדיקה חופשי
+      round:(r[10]||'').toString().trim(),               // עמודה K – סבב
+      fileUrl:(r[11]||'').toString().trim(),             // עמודה L – מסמך בדיקה בדרייב
+      title:(r[12]||'').toString().trim()                // עמודה M – שם בדיקה חופשי
     });
   }
 }
@@ -2062,8 +2145,6 @@ function parseStaff(raw){
     staff.push({name:n,email:e,domain:d,building:b});
   }
   blds=[...bs].sort();
-  const fb=document.getElementById('fBuild');
-  if(fb&&blds.length) fb.innerHTML=blds.map(b=>`<option>${b}</option>`).join('');
   console.log('=== עובדים ===');
   staff.forEach(s=>console.log(s.name+' | '+s.domain+' | '+s.email));
   console.log('סה"כ: '+staff.length);
@@ -2094,24 +2175,41 @@ function demo(){
     {date:new Date(2026,5,25),building:'10b',floor:'7',domain:'בדיקות',crew:[{name:'משה כהן',email:'moshe@ex.com'}]},
     {date:new Date(2026,5,28),building:'10c',floor:'4',domain:'מאיפנים',crew:[{name:'שרון אמיתי',email:'sharon@ex.com'}]},
   ];
-  const fb=document.getElementById('fBuild');
-  if(fb) fb.innerHTML=blds.map(b=>`<option>${b}</option>`).join('');
   refresh();ss('ok','נתוני דוגמה');hideLoad();
 }
 
-let selFloors=[],selDoms=[];
-function updateFloors(building){
+let selFloors=[],selDoms=[],selBuild=[];
+function renderBuildChips(){
+  const box=document.getElementById('fBuildChips');
+  if(!box) return;
+  box.innerHTML=blds.map(b=>`<div class="mchip" onclick="toggleBuild('${b}',this)">${b}</div>`).join('');
+}
+function toggleBuild(b,el){
+  const i=selBuild.indexOf(b);
+  if(i>=0){selBuild.splice(i,1);el.classList.remove('on');}
+  else{selBuild.push(b);el.classList.add('on');}
+  updateFloors();
+}
+function updateFloors(){
   const box=document.getElementById('fFloorChips');
+  const keepFloors=[...selFloors];
   selFloors=[];
-  const floors=bldFloors[building];
   let list=[];
-  if(floors&&floors.size>0){
-    list=[...floors].map(Number).filter(n=>!isNaN(n)).sort((a,b)=>a-b).map(String);
+  if(selBuild.length){
+    const union=new Set();
+    selBuild.forEach(b=>{
+      const floors=bldFloors[b];
+      if(floors) [...floors].forEach(f=>union.add(f));
+    });
+    list=[...union].map(Number).filter(n=>!isNaN(n)).sort((a,b)=>a-b).map(String);
   }
   if(!list.length) list=['1','2','3','4','5','6','7','8','9'];
-  // קומות מיוחדות שקיימות במבנים
   ['קרקע','מרתף','גגות','כללי'].forEach(x=>{if(!list.includes(x))list.push(x);});
-  box.innerHTML=list.map(f=>`<div class="mchip" onclick="toggleFloor('${f}',this)">${isNaN(f)?f:'קומה '+f}</div>`).join('');
+  box.innerHTML=list.map(f=>{
+    const on=keepFloors.includes(f);
+    if(on) selFloors.push(f);
+    return `<div class="mchip${on?' on':''}" onclick="toggleFloor('${f}',this)">${isNaN(f)?f:'קומה '+f}</div>`;
+  }).join('');
 }
 function toggleFloor(f,el){
   const i=selFloors.indexOf(f);
@@ -2137,10 +2235,6 @@ function updateEditFloors(building, currentFloor){
   // ערך קיים (כולל כמה קומות כמו "1, 3") – נוסיף כאופציה כדי שלא יאבד
   if(currentFloor&&!list.includes(String(currentFloor))) list.unshift(String(currentFloor));
   sel.innerHTML=list.map(f=>`<option value="${f}"${String(f)===String(currentFloor)?' selected':''}>${isNaN(f)?f:'קומה '+f}</option>`).join('');
-}
-
-function onBuildingChange(){
-  updateFloors(document.getElementById('fBuild').value);
 }
 
 function refresh(){updateFilters();updateStats();renderCal();renderG();renderL();}
@@ -2508,6 +2602,26 @@ function closeHoloFloor(){document.getElementById('hfpOverlay').classList.remove
 
 // DETAIL POPUP
 let _dpopCheck=null,_dpopIdx=-1;
+// ===== שיתוף פרטי בדיקה לוואטסאפ =====
+function shareToWhatsApp(c){
+  const dateStr=c.date?c.date.toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'long',year:'numeric'}):'—';
+  const names=c.crew.map(p=>p.name).join(', ')||'—';
+  const lines=[
+    `📋 *${c.title||'בדיקה'}*`,
+    `🏢 מבנה: ${c.building}`,
+    `🏬 קומה: ${c.floor}`,
+    `🔧 תחום: ${c.domain}${c.subtype?' · '+c.subtype:''}`,
+    c.round?`🔁 סבב: ${c.round}`:null,
+    `📅 תאריך: ${dateStr}`,
+    `👷 צוות: ${names}`,
+    `📊 סטטוס: ${c.status||'טרם התחיל'}`,
+    c.fileUrl?`📎 מסמך: ${c.fileUrl}`:null
+  ].filter(Boolean);
+  const text=lines.join('\n');
+  window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank');
+  toast('💬 וואטסאפ נפתח — בחר/י את הקבוצה כדי לשלוח','ok');
+}
+
 function showDpop(e,idx){
   e.stopPropagation();
   const c=checks[idx];if(!c) return;
@@ -2530,6 +2644,7 @@ function showDpop(e,idx){
       <span style="display:inline-block;width:9px;height:9px;border-radius:3px;background:${colBg(c.domain)}"></span>
       ${c.domain}${c.subtype&&c.subtype!==c.domain?' · '+c.subtype:''}<small>תחום</small></div></div>
     <div class="dcrew-section"><div class="dcrew-label">👷 צוות הבדיקה</div>${crewHtml}</div>`;
+  document.getElementById('dpwabtn').onclick=()=>shareToWhatsApp(c);
   document.getElementById('dpinvbtn').onclick=()=>resendDpop();
   // כפתורי מסמך – רק אם צורף מסמך לבדיקה
   const docBtn=document.getElementById('dpdocbtn');
@@ -2660,6 +2775,7 @@ function impDetectCols(hdr){
     floor: find('קומה'),
     domain: find('תחום'),
     subtype: find('סוג'),
+    round: find('סבב'),
     crew: find('צוות','שם צוות')
   };
   // אם הכותרות לא זוהו – נופלים לסדר התבנית הקלאסי
@@ -2714,6 +2830,7 @@ function buildImpPreview(hdrRow,dataRows){
       const iso=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
       _impRows.push({date:iso,building,floor,domain,
         subtype:String(get(map.subtype)||'').trim(),
+        round:String(get(map.round)||'').trim(),
         name:crew.map(p=>p.name).join(', '),
         email:crew.map(p=>p.email).join(', ')});
     }
@@ -2887,6 +3004,9 @@ function openEditModal(idx){
   }
   const efB=document.getElementById('efBuild');
   if(blds.length) efB.innerHTML=blds.map(b=>`<option>${b}</option>`).join('');
+  if(c.building&&![...efB.options].some(o=>o.value===c.building)){
+    efB.innerHTML+=`<option>${c.building}</option>`;
+  }
   efB.value=c.building;
   updateEditFloors(c.building,c.floor);
 
@@ -2913,6 +3033,8 @@ function openEditModal(idx){
   if(efN) efN.value=c.notes||'';
   const efT=document.getElementById('efTitle');
   if(efT) efT.value=c.title||'';
+  const efR=document.getElementById('efRound');
+  if(efR) efR.value=c.round||'1';
 
   // אפס שדה מסמך והצג חיווי אם כבר מצורף
   const efF=document.getElementById('efFile');
@@ -2965,6 +3087,7 @@ async function saveEdit(){
   const building=document.getElementById('efBuild').value;
   const floor=document.getElementById('efFloor').value;
   const title=document.getElementById('efTitle').value.trim();
+  const round=document.getElementById('efRound').value;
   const domain=document.getElementById('efDomain').value;
   const subtype=document.getElementById('efSubDomain').value;
   if(!subtype){toast('יש לבחור סוג בדיקה','warn');document.getElementById('efSubDomain').focus();return;}
@@ -3008,7 +3131,7 @@ async function saveEdit(){
       ss('loading','שומר שינויים...');
       const data=JSON.stringify({
         rowIndex: oldCheck.rowIndex,
-        date, building, floor, domain, subtype, title,
+        date, building, floor, domain, subtype, title, round,
         name: nameStr, email: emailStr,
         status, notes,
         user: currentUser
@@ -3076,7 +3199,7 @@ async function saveEdit(){
     toast('✅ הבדיקה עודכנה (דוגמה)','ok');
   }
 
-  checks[_editIdx]={...checks[_editIdx],date:parseLocalDate(date),building,floor,domain,subtype,title,crew:[...editSel],status,notes};
+  checks[_editIdx]={...checks[_editIdx],date:parseLocalDate(date),building,floor,domain,subtype,title,round,crew:[...editSel],status,notes};
   document.getElementById('editOverlay').classList.remove('on');
   document.body.style.overflow='';
   refresh();
@@ -3249,6 +3372,47 @@ function renderL(){
   }).join('');
 }
 
+// ===== ייצוא הרשימה לאקסל =====
+function exportToExcel(){
+  const q=(document.getElementById('lsearch')?.value||'').trim().toLowerCase();
+  const stF=document.getElementById('lstatusFilter')?.value||'';
+  let list=checks.slice();
+  if(stF) list=list.filter(c=>(c.status||'טרם התחיל')===stF);
+  if(q){
+    list=list.filter(c=>{
+      const hay=[c.building,c.floor,c.domain,c.subtype,c.title,
+        ...(c.crew||[]).map(p=>p.name)].join(' ').toLowerCase();
+      return hay.includes(q);
+    });
+  }
+  list.sort((a,b)=>sortCmp({c:a},{c:b},lSortKey));
+
+  if(!list.length){toast('אין בדיקות לייצוא','warn');return;}
+
+  const rows=[['מבנה','קומה','תחום','סוג הבדיקה','סבב','אנשי צוות','תאריך','סטטוס','קישור לקובץ']];
+  list.forEach(c=>{
+    rows.push([
+      c.building||'',
+      c.floor||'',
+      c.domain||'',
+      c.subtype||'',
+      c.round||'',
+      c.crew.map(p=>p.name).join(', '),
+      c.date?c.date.toLocaleDateString('he-IL'):'',
+      c.status||'טרם התחיל',
+      c.fileUrl||''
+    ]);
+  });
+
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:10},{wch:12},{wch:14},{wch:20},{wch:6},{wch:26},{wch:12},{wch:12},{wch:36}];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'בדיקות');
+  const stamp=new Date().toLocaleDateString('he-IL').replace(/\./g,'-');
+  XLSX.writeFile(wb,`בדיקות-${stamp}.xlsx`);
+  toast(`⬇️ יוצאו ${list.length} בדיקות לאקסל`,'ok');
+}
+
 // NAV
 function prevM(){M--;if(M<0){M=11;Y--;}weekStart=getWeekStart(new Date(Y,M,1));renderG();}
 function nextM(){M++;if(M>11){M=0;Y++;}weekStart=getWeekStart(new Date(Y,M,1));renderG();}
@@ -3259,6 +3423,128 @@ function goToday(){
 }
 
 // MODAL
+// ===== תפריט כפתור פלוס =====
+function togglePlusMenu(ev,btn){
+  ev.stopPropagation();
+  if(!isAdmin()){toast("אין הרשאה לפעולה זו","err");return;}
+  const ov=document.getElementById('plusMenuOverlay');
+  const menu=document.getElementById('plusMenu');
+  ov.classList.add('on');
+  const r=btn.getBoundingClientRect();
+  const mw=Math.min(300,window.innerWidth*.88);
+  let left=r.right-mw;
+  left=Math.max(10,Math.min(left,window.innerWidth-mw-10));
+  let top=r.top-8-116;  // מעל הכפתור כברירת מחדל
+  if(top<10) top=r.bottom+8;  // אם אין מקום למעלה, נפתח למטה
+  menu.style.left=left+'px';
+  menu.style.top=top+'px';
+}
+function closePlusMenu(){document.getElementById('plusMenuOverlay').classList.remove('on');}
+
+// ===== הפצה חדשה – זימון יום שלם ליומן =====
+let distSel=[];
+function openDistModal(){
+  if(!isAdmin()){toast("אין הרשאה לפעולה זו","err");return;}
+  const db=document.getElementById('distBuild');
+  db.innerHTML=blds.length?blds.map(b=>`<option>${b}</option>`).join(''):'<option value="">אין מבנים</option>';
+  updateDistFloors();
+  document.getElementById('distName').value='הפצה לדו"ח למנהל';
+  const today=new Date();
+  document.getElementById('distDate').value=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+  distSel=[];
+  renderDistSel();
+  document.getElementById('distSearch').value='';
+  fDistStaff();
+  document.getElementById('distOverlay').classList.add('on');
+  document.body.style.overflow='hidden';
+}
+function closeDistModal(){
+  document.getElementById('distOverlay').classList.remove('on');
+  document.body.style.overflow='';
+}
+function updateDistFloors(){
+  const building=document.getElementById('distBuild').value;
+  const df=document.getElementById('distFloor');
+  const floors=bldFloors[building];
+  let list=(floors&&floors.size>0)
+    ?[...floors].map(Number).filter(n=>!isNaN(n)).sort((a,b)=>a-b).map(String)
+    :['1','2','3','4','5','6','7','8','9'];
+  ['קרקע','מרתף','גגות','כללי'].forEach(x=>{if(!list.includes(x))list.push(x);});
+  df.innerHTML=list.map(f=>`<option value="${f}">${isNaN(f)?f:'קומה '+f}</option>`).join('');
+}
+
+// ===== בחירת נמענים להפצה =====
+function fDistStaff(){
+  const q=(document.getElementById('distSearch').value||'').toLowerCase();
+  const l=document.getElementById('distSlist');
+  const shown=staff.filter(s=>{
+    const m=!q||s.name.includes(q)||s.email.toLowerCase().includes(q);
+    return m&&!distSel.find(x=>x.name===s.name&&x.email===s.email);
+  });
+  if(!shown.length){
+    l.innerHTML=`<div style="padding:16px;color:var(--muted);font-size:13px;text-align:center">לא נמצאו עובדים</div>`;
+    return;
+  }
+  l.innerHTML=shown.map(s=>`
+    <div class="sopt" onclick="addDistS(${staff.indexOf(s)})">
+      <div><div class="sname">${s.name}</div><div class="semail">${s.email}</div></div>
+      <div class="sadd">+</div>
+    </div>`).join('');
+}
+function addDistS(i){
+  const s=staff[i];
+  if(distSel.find(x=>x.name===s.name)) return;
+  distSel.push({name:s.name,email:s.email});
+  renderDistSel();
+  fDistStaff();
+}
+function rmDistS(i){distSel.splice(i,1);renderDistSel();fDistStaff();}
+function renderDistSel(){
+  const el=document.getElementById('distSelStaff');
+  if(!distSel.length){el.innerHTML='<div class="nostaf">טרם נבחרו</div>';return;}
+  el.innerHTML=distSel.map((s,i)=>`<div class="stag">${s.name}<span class="rm" onclick="rmDistS(${i})">×</span></div>`).join('');
+}
+
+async function saveDistribution(){
+  const name=document.getElementById('distName').value.trim()||'הפצה לדו"ח למנהל';
+  const date=document.getElementById('distDate').value;
+  const building=document.getElementById('distBuild').value;
+  const floor=document.getElementById('distFloor').value;
+  if(!date||!building||!floor){toast('יש לבחור תאריך, מבנה וקומה','warn');return;}
+  if(!distSel.length){toast('יש לבחור לפחות נמען אחד לזימון','warn');return;}
+
+  const recipientNames=distSel.map(s=>s.name).join(', ');
+  const recipientEmails=distSel.map(s=>s.email).join(', ');
+
+  const btn=document.getElementById('distSaveBtn');
+  const txt=document.getElementById('distSaveBtnTxt');
+
+  try{
+    btn.classList.add('btn-spinning');
+    txt.textContent='יוצר הפצה ושולח זימון...';
+    showAppLoader('יוצר הפצה ושולח זימון ליומן...');
+    ss('loading','שולח...');
+    const data=JSON.stringify({name,building,floor,date,recipientNames,recipientEmails,user:currentUser});
+    const r=await fetch(SCRIPT_URL+'?action=addDistribution&data='+encodeURIComponent(data));
+    const j=await r.json();
+    console.log('תשובת addDistribution:',j);
+    if(j.ok){
+      toast(j.inviteLimited?'⚠️ ההפצה נוצרה, אך חלק מהזימונים לא נשלחו עקב מגבלה יומית':'✅ ההפצה נוצרה וזומנה ליומן ליום שלם','ok');
+      closeDistModal();
+    } else {
+      toast('שגיאה: '+(j.error||'לא ידוע'),'err');
+    }
+    ss('ok','מחובר');
+  }catch(e){
+    console.error('שגיאת הפצה:',e);
+    ss('err','שגיאה');toast('שגיאת רשת - ההפצה לא נוצרה','err');
+  }finally{
+    btn.classList.remove('btn-spinning');
+    txt.textContent='📤 צור הפצה ושלח זימון';
+    hideAppLoader();
+  }
+}
+
 function openModal(){
   if(!isAdmin()){toast("אין הרשאה לפעולה זו","err");return;}
   sel=[];renderSel();
@@ -3269,8 +3555,11 @@ function openModal(){
     ? doms.map(d=>`<div class="mchip" onclick="toggleDom('${d}',this)">${d}</div>`).join('')
     : '<div class="mchips-hint">לא נמצאו תחומים</div>';
   updateSubDomains();
-  // עדכן קומות לפי המבנה הנוכחי
-  updateFloors(document.getElementById('fBuild').value);
+  // עדכן מבנים וקומות
+  selBuild=[];
+  renderBuildChips();
+  updateFloors();
+  document.getElementById('fRound').value='1';
   renderStaff('');
   document.getElementById('moverlay').classList.add('on');
   document.body.style.overflow='hidden';
@@ -3284,8 +3573,8 @@ function closeModal(){
 const SUBDOMAINS={
   'מאפיינים':['מאפיינים'],
   'מאיפנים':['מאיפנים'],
-  'תפעול':['בינוי תומך תפעול','מערכות'],
-  'תקשוב':['פאסיבי','ביטחון','מולטימדיה','אמצעים ותקשורת']
+  'תפעול':['בינוי תומך תפעול','מערכות','בדיקות תפעוליות','הרצות תפעוליות'],
+  'תקשוב':['פאסיבי','ביטחון','מולטימדיה','אמצעים ותקשורת','בינוי תומך תקשוב']
 };
 function buildSubOptions(dom,selected){
   const list=SUBDOMAINS[dom]||[dom];  // תחום לא ממופה: סוג הבדיקה = התחום עצמו
@@ -3369,11 +3658,13 @@ function renderSel(){
 async function submit(){
   if(!isAdmin()){toast("אין הרשאה","err");return;}
   const date=document.getElementById('fDate').value;
-  const building=document.getElementById('fBuild').value;
+  const building=selBuild.join(', ');
   const floor=selFloors.join(', ');
+  const round=document.getElementById('fRound').value;
   const title=document.getElementById('fTitle').value.trim();
   const subDom=document.getElementById('fSubDomain').value;
-  if(!date||!building||!sel.length){toast('יש למלא תאריך, מבנה ולבחור צוות','warn');return;}
+  if(!date||!sel.length){toast('יש למלא תאריך ולבחור צוות','warn');return;}
+  if(!selBuild.length){toast('יש לבחור לפחות מבנה אחד','warn');return;}
   if(!selFloors.length){toast('יש לבחור לפחות קומה אחת','warn');return;}
   if(!selDoms.length){toast('יש לבחור לפחות תחום אחד','warn');return;}
   if(!subDom){toast('יש לבחור סוג בדיקה','warn');document.getElementById('fSubDomain').focus();return;}
@@ -3404,7 +3695,7 @@ async function submit(){
       saveTxt.textContent='שומר ושולח זימון...';
       showAppLoader('שומר בדיקה ושולח זימון...');
       ss('loading','שומר...');
-      const data=JSON.stringify({date,building,floor,domain,subtype,title,name,email,user:currentUser});
+      const data=JSON.stringify({date,building,floor,domain,subtype,title,round,name,email,user:currentUser});
       const url=SCRIPT_URL+'?action=addRow&data='+encodeURIComponent(data);
       console.log('שולח:',{date,building,floor,domain,name,email});
       const r=await fetch(url);
@@ -3421,7 +3712,7 @@ async function submit(){
       saveTxt.textContent='✓ שמור ושלח זימון';
     }
     closeModal();
-    selFloors=[];selDoms=[];
+    selFloors=[];selDoms=[];selBuild=[];
     document.getElementById('fTitle').value='';
     showAppLoader('מסנכרן נתונים...');
     await sync();   // טעינה מחדש מהשיטס – מספרי שורות מדויקים
@@ -3431,7 +3722,7 @@ async function submit(){
 
   checks.push({date:parseLocalDate(date),building,floor,domain,crew:[...sel],status,notes,rowIndex:checks.length+2});
   refresh();closeModal();
-  selFloors=[];selDoms=[];
+  selFloors=[];selDoms=[];selBuild=[];
 }
 
 async function resend(i){
