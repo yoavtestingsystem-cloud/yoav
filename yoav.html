@@ -1601,6 +1601,10 @@ button:active{transform:scale(.96)}
       <div class="fg"><label>תאריך</label><input type="date" id="fDate"/></div>
       <div class="fg"><label>סבב</label><select id="fRound"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
     </div>
+    <div class="frow">
+      <div class="fg"><label>שעת התחלה</label><input type="time" id="fStartTime" value="09:00"/></div>
+      <div class="fg"><label>שעת סיום</label><input type="time" id="fEndTime" value="10:00"/></div>
+    </div>
     <div class="fg"><label>מבנה <span style="color:#dc2626">*</span></label>
       <div class="mchips" id="fBuildChips"></div>
       <div class="mchips-hint">אפשר לבחור כמה מבנים לבדיקה אחת</div>
@@ -1737,6 +1741,10 @@ button:active{transform:scale(.96)}
       <div class="fg"><label>סבב</label><select id="efRound"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
     </div>
     <div class="frow">
+      <div class="fg"><label>שעת התחלה</label><input type="time" id="efStartTime"/></div>
+      <div class="fg"><label>שעת סיום</label><input type="time" id="efEndTime"/></div>
+    </div>
+    <div class="frow">
       <div class="fg"><label>קומה</label><select id="efFloor"></select></div>
       <div class="fg"><label>תחום הבדיקה</label><select id="efDomain" onchange="onEditDomChange()"><option>מאיפנים</option><option>בדיקות</option><option>יועצים</option><option>אחר</option></select></div>
       <div class="fg"><label>סוג הבדיקה <span style="color:#dc2626">*</span></label><select id="efSubDomain"></select></div>
@@ -1822,7 +1830,7 @@ button:active{transform:scale(.96)}
 
 <script>
 // ============================================================
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxXc6-j2wBEIKzULSIvuCW2afqux7zFfCvQKNKivbG7hvYK65p8d7wy98KzJRNH8SbTDw/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz7gatpMiruEqN53ITuMzpBs0QOajkScQl4I_6UZrr9fNFAWjySYRe6roE7MvMKENdHJg/exec';
 // ============================================================
 
 
@@ -2118,7 +2126,8 @@ function parseChecks(raw){
       notes:(r[8]||'').toString().trim(),                // עמודה I
       round:(r[10]||'').toString().trim(),               // עמודה K – סבב
       fileUrl:(r[11]||'').toString().trim(),             // עמודה L – מסמך בדיקה בדרייב
-      title:(r[12]||'').toString().trim()                // עמודה M – שם בדיקה חופשי
+      title:(r[12]||'').toString().trim(),               // עמודה M – שם בדיקה חופשי
+      hours:(r[13]||'').toString().trim()                // עמודה N – שעות הבדיקה (למשל 09:00-10:00)
     });
   }
 }
@@ -2613,6 +2622,7 @@ function shareToWhatsApp(c){
     `🔧 תחום: ${c.domain}${c.subtype?' · '+c.subtype:''}`,
     c.round?`🔁 סבב: ${c.round}`:null,
     `📅 תאריך: ${dateStr}`,
+    c.hours?`🕐 שעות: ${c.hours}`:null,
     `👷 צוות: ${names}`,
     `📊 סטטוס: ${c.status||'טרם התחיל'}`,
     c.fileUrl?`📎 מסמך: ${c.fileUrl}`:null
@@ -2629,7 +2639,7 @@ function showDpop(e,idx){
   const p=document.getElementById('dpop');
   document.getElementById('dptitle').textContent=`${c.title||'בדיקה'} ב${c.building} | קומה ${c.floor}`;
   const badge=document.getElementById('dpbadge');
-  badge.textContent=c.date?c.date.toLocaleDateString('he-IL'):'';
+  badge.textContent=(c.date?c.date.toLocaleDateString('he-IL'):'')+(c.hours?' · 🕐 '+c.hours:'');
   badge.style.background=colBgAlpha(c.domain,.16);badge.style.color=colPrimary(c.domain);
   const crewHtml=c.crew.map(p=>`
     <div class="dcrew">
@@ -3035,6 +3045,11 @@ function openEditModal(idx){
   if(efT) efT.value=c.title||'';
   const efR=document.getElementById('efRound');
   if(efR) efR.value=c.round||'1';
+  const hoursParts=(c.hours||'09:00-10:00').split('-');
+  const efST=document.getElementById('efStartTime');
+  const efET=document.getElementById('efEndTime');
+  if(efST) efST.value=hoursParts[0]||'09:00';
+  if(efET) efET.value=hoursParts[1]||'10:00';
 
   // אפס שדה מסמך והצג חיווי אם כבר מצורף
   const efF=document.getElementById('efFile');
@@ -3088,9 +3103,13 @@ async function saveEdit(){
   const floor=document.getElementById('efFloor').value;
   const title=document.getElementById('efTitle').value.trim();
   const round=document.getElementById('efRound').value;
+  const startTime=document.getElementById('efStartTime').value||'09:00';
+  const endTime=document.getElementById('efEndTime').value||'10:00';
   const domain=document.getElementById('efDomain').value;
   const subtype=document.getElementById('efSubDomain').value;
   if(!subtype){toast('יש לבחור סוג בדיקה','warn');document.getElementById('efSubDomain').focus();return;}
+  if(startTime>=endTime){toast('שעת הסיום חייבת להיות אחרי שעת ההתחלה','warn');return;}
+  const hours=startTime+'-'+endTime;
   const status=document.getElementById('efStatus')?.value||'טרם התחיל';
   const notes=(document.getElementById('efNotes')?.value||'').trim();
 
@@ -3131,7 +3150,7 @@ async function saveEdit(){
       ss('loading','שומר שינויים...');
       const data=JSON.stringify({
         rowIndex: oldCheck.rowIndex,
-        date, building, floor, domain, subtype, title, round,
+        date, building, floor, domain, subtype, title, round, hours,
         name: nameStr, email: emailStr,
         status, notes,
         user: currentUser
@@ -3199,7 +3218,7 @@ async function saveEdit(){
     toast('✅ הבדיקה עודכנה (דוגמה)','ok');
   }
 
-  checks[_editIdx]={...checks[_editIdx],date:parseLocalDate(date),building,floor,domain,subtype,title,round,crew:[...editSel],status,notes};
+  checks[_editIdx]={...checks[_editIdx],date:parseLocalDate(date),building,floor,domain,subtype,title,round,hours,crew:[...editSel],status,notes};
   document.getElementById('editOverlay').classList.remove('on');
   document.body.style.overflow='';
   refresh();
@@ -3560,6 +3579,8 @@ function openModal(){
   renderBuildChips();
   updateFloors();
   document.getElementById('fRound').value='1';
+  document.getElementById('fStartTime').value='09:00';
+  document.getElementById('fEndTime').value='10:00';
   renderStaff('');
   document.getElementById('moverlay').classList.add('on');
   document.body.style.overflow='hidden';
@@ -3661,6 +3682,8 @@ async function submit(){
   const building=selBuild.join(', ');
   const floor=selFloors.join(', ');
   const round=document.getElementById('fRound').value;
+  const startTime=document.getElementById('fStartTime').value||'09:00';
+  const endTime=document.getElementById('fEndTime').value||'10:00';
   const title=document.getElementById('fTitle').value.trim();
   const subDom=document.getElementById('fSubDomain').value;
   if(!date||!sel.length){toast('יש למלא תאריך ולבחור צוות','warn');return;}
@@ -3668,6 +3691,8 @@ async function submit(){
   if(!selFloors.length){toast('יש לבחור לפחות קומה אחת','warn');return;}
   if(!selDoms.length){toast('יש לבחור לפחות תחום אחד','warn');return;}
   if(!subDom){toast('יש לבחור סוג בדיקה','warn');document.getElementById('fSubDomain').focus();return;}
+  if(startTime>=endTime){toast('שעת הסיום חייבת להיות אחרי שעת ההתחלה','warn');return;}
+  const hours=startTime+'-'+endTime;
   const domain=selDoms.join(', ');
   const subtype=subDom;
   const status=document.getElementById('fStatus').value;
@@ -3695,7 +3720,7 @@ async function submit(){
       saveTxt.textContent='שומר ושולח זימון...';
       showAppLoader('שומר בדיקה ושולח זימון...');
       ss('loading','שומר...');
-      const data=JSON.stringify({date,building,floor,domain,subtype,title,round,name,email,user:currentUser});
+      const data=JSON.stringify({date,building,floor,domain,subtype,title,round,hours,name,email,user:currentUser});
       const url=SCRIPT_URL+'?action=addRow&data='+encodeURIComponent(data);
       console.log('שולח:',{date,building,floor,domain,name,email});
       const r=await fetch(url);
