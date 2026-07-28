@@ -1228,6 +1228,58 @@ body.admin-named .named-admin-only{display:inline-flex}
 }
 .mchips-hint{font-size:10.5px;color:var(--muted);font-weight:600;margin-top:2px}
 
+/* ===== בורר שעות מותאם – 30 דקות בקפיצה ===== */
+.time-range-box{
+  display:flex;align-items:flex-end;justify-content:center;gap:12px;
+  padding:14px;background:var(--surface2);border:1.5px solid var(--border2);
+  border-radius:var(--rsm);flex-wrap:wrap;
+}
+.time-picker-wrap{display:flex;flex-direction:column;align-items:center;gap:5px}
+.tp-label{
+  font-size:10.5px;font-weight:800;letter-spacing:.5px;padding:2px 10px;
+  border-radius:8px;
+}
+.tp-label-start{color:#15803d;background:#dcfce7}
+.tp-label-end{color:#b91c1c;background:#fee2e2}
+.time-picker{
+  direction:ltr;  /* מציג את השעה כמו כל מספר – שעה משמאל, דקות מימין */
+  display:flex;align-items:center;gap:6px;
+  background:var(--surface);border:2px solid var(--border2);border-radius:12px;
+  padding:8px 12px;transition:all .18s;box-shadow:var(--sh);
+}
+.time-picker:focus-within{box-shadow:0 0 0 3px rgba(37,99,235,.15)}
+.time-picker.tp-start{border-color:#86efac}
+.time-picker.tp-start:focus-within{border-color:#16a34a;box-shadow:0 0 0 3px rgba(22,163,74,.15)}
+.time-picker.tp-end{border-color:#fca5a5}
+.time-picker.tp-end:focus-within{border-color:#dc2626;box-shadow:0 0 0 3px rgba(220,38,38,.15)}
+.tp-ic{font-size:9px;opacity:.85}
+.tp-sel{
+  border:none;background:none;font-family:'Heebo',sans-serif;font-weight:900;
+  font-size:17px;cursor:pointer;padding:2px 0;
+  -webkit-appearance:none;appearance:none;text-align:center;
+}
+.time-picker.tp-start .tp-sel{color:#15803d}
+.time-picker.tp-end .tp-sel{color:#b91c1c}
+.tp-sel:focus{outline:none}
+.tp-hour{width:30px}
+.tp-min{width:28px}
+.tp-colon{font-weight:900;color:var(--muted);font-size:15px;margin:0 -2px}
+.time-range-arrow{font-size:16px;color:var(--muted);flex-shrink:0;align-self:center;margin-bottom:6px}
+
+.dur-chips{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.dur-chip{
+  background:var(--surface2);border:1.5px solid var(--border2);color:var(--navy);
+  border-radius:16px;padding:6px 13px;font-size:11.5px;font-weight:700;
+  font-family:'Heebo',sans-serif;cursor:pointer;transition:all .18s;
+}
+.dur-chip:hover{background:var(--navy);color:#fff;border-color:transparent;transform:translateY(-1px)}
+.dur-chip:active{transform:scale(.94)}
+@media(max-width:420px){
+  .time-range-box{gap:8px;padding:12px 8px}
+  .time-picker{padding:7px 8px}
+  .tp-sel{font-size:15px}
+}
+
 /* ============================================================
    ✨ שכבת חיים – אנימציות ומיקרו-אינטראקציות
    ============================================================ */
@@ -1333,6 +1385,111 @@ button:active{transform:scale(.96)}
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
 }
+
+/* ============================================================
+   💎 שכבת פרימיום – ליטוש חוויית משתמש ברמה גבוהה
+   ============================================================ */
+
+/* --- גלילה מותאמת --- */
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{
+  background:linear-gradient(180deg,#94a3b8,#64748b);border-radius:20px;
+  border:2px solid var(--bg,transparent);background-clip:padding-box;
+}
+::-webkit-scrollbar-thumb:hover{background:linear-gradient(180deg,#64748b,#475569)}
+html{scrollbar-width:thin;scroll-behavior:smooth}
+
+/* --- צבע סימון טקסט ממותג --- */
+::selection{background:rgba(37,99,235,.22);color:inherit}
+
+/* --- מסגרת מיקוד (focus) עקבית ואלגנטית לכל אלמנט לחיץ --- */
+button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
+  outline:2.5px solid rgba(37,99,235,.55);outline-offset:2px;border-radius:6px;
+}
+
+/* --- אפקט "ריפל" עדין בלחיצה על כפתורים ראשיים --- */
+@keyframes rippleFx{to{transform:scale(3.2);opacity:0}}
+.btn-new,.btn-save,.imp-btn-go,.dpop-inv-btn,.lexport-btn,.btn-save-edit{
+  position:relative;overflow:hidden;isolation:isolate;
+}
+.ripple-dot{
+  position:absolute;border-radius:50%;background:rgba(255,255,255,.55);
+  width:14px;height:14px;pointer-events:none;transform:scale(0);
+  animation:rippleFx .55s ease-out forwards;z-index:2;
+}
+
+/* --- כפתורי סגירה (✕) – סיבוב עדין בהובר --- */
+.mclose,.docprev-close,.hfp-close{transition:all .25s cubic-bezier(.34,1.56,.64,1)}
+.mclose:hover,.docprev-close:hover,.hfp-close:hover{transform:rotate(90deg) scale(1.1)}
+
+/* --- זוהר צבעוני בהובר לכרטיסיות בדיקה, תואם לצבע התחום --- */
+.wd-ev{will-change:transform}
+.wd-ev:hover{box-shadow:0 10px 26px -4px var(--glow,rgba(0,0,0,.25)),0 3px 8px rgba(0,0,0,.15)}
+
+/* --- הילה נושמת מאחורי אייקוני הסטטיסטיקה --- */
+.sc-icon{position:relative}
+.sc-icon::before{
+  content:'';position:absolute;inset:-6px;border-radius:50%;
+  background:radial-gradient(circle,rgba(37,99,235,.18),transparent 70%);
+  animation:haloBreathe 3.2s ease-in-out infinite;z-index:-1;
+}
+@keyframes haloBreathe{0%,100%{opacity:.5;transform:scale(.92)}50%{opacity:1;transform:scale(1.12)}}
+
+/* --- טוסטים: כניסה אלסטית + פס התקדמות עדין --- */
+@keyframes toastIn{
+  0%{opacity:0;transform:translateY(16px) scale(.9)}
+  60%{opacity:1;transform:translateY(-3px) scale(1.02)}
+  100%{opacity:1;transform:translateY(0) scale(1)}
+}
+.toast{animation:toastIn .45s cubic-bezier(.34,1.56,.64,1) !important;overflow:hidden;position:relative}
+.toast::after{
+  content:'';position:absolute;bottom:0;right:0;left:0;height:3px;
+  background:rgba(255,255,255,.55);animation:toastProgress 3.2s linear forwards;
+}
+@keyframes toastProgress{from{width:100%}to{width:0%}}
+
+/* --- מצבים ריקים: אייקון מרחף עדין --- */
+.lempty-ic,.hfp-empty{animation:floaty 3.5s ease-in-out infinite}
+
+/* --- הבהוב "עודכן" קצר על תאים שסונכרנו מחדש --- */
+@keyframes freshFlash{
+  0%{box-shadow:0 0 0 0 rgba(37,99,235,.55)}
+  100%{box-shadow:0 0 0 14px rgba(37,99,235,0)}
+}
+.just-synced{animation:freshFlash .9s ease-out}
+
+/* --- כרטיסי סטטוס בפופ-אפ: מעבר חלק בשינוי ערך --- */
+.lstatus-badge,.pcheck-domain,.badge{transition:background .3s ease,transform .15s ease}
+
+/* --- עומק עדין לכרטיס הרשימה בהובר --- */
+.lcard{transition:box-shadow .3s ease}
+
+/* --- אנימציית "נשימה" עדינה לכפתור הפלוס הצף כשאין עדיין בדיקות --- */
+.fab{animation:fabPulse 2.4s ease-in-out infinite}
+@keyframes fabPulse{
+  0%,100%{box-shadow:0 8px 24px rgba(37,99,235,.5)}
+  50%{box-shadow:0 8px 32px rgba(37,99,235,.75),0 0 0 8px rgba(37,99,235,.08)}
+}
+
+/* --- מודלים: רקע מטושטש חלק יותר עם כניסה מדורגת של השדות --- */
+.mbox .fg{animation:fadeUp .35s cubic-bezier(.22,1,.36,1) backwards}
+.mbox .fg:nth-child(1){animation-delay:.02s}
+.mbox .fg:nth-child(2){animation-delay:.05s}
+.mbox .fg:nth-child(3){animation-delay:.08s}
+.mbox .fg:nth-child(4){animation-delay:.11s}
+.mbox .fg:nth-child(5){animation-delay:.14s}
+
+/* --- מעבר חלק בין תצוגות שבוע/חודש --- */
+#weekCal,.month-view{transition:opacity .25s ease}
+
+/* --- הדגשת שורה נבחרת ברשימה --- */
+.lrow{position:relative}
+.lrow::before{
+  content:'';position:absolute;top:0;bottom:0;right:0;width:3px;
+  background:transparent;transition:background .2s ease;
+}
+.lrow:hover::before{background:var(--navy)}
 
 
 
@@ -1601,9 +1758,34 @@ button:active{transform:scale(.96)}
       <div class="fg"><label>תאריך</label><input type="date" id="fDate"/></div>
       <div class="fg"><label>סבב</label><select id="fRound"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
     </div>
-    <div class="frow">
-      <div class="fg"><label>שעת התחלה</label><input type="time" id="fStartTime" value="09:00"/></div>
-      <div class="fg"><label>שעת סיום</label><input type="time" id="fEndTime" value="10:00"/></div>
+    <div class="fg">
+      <label>שעות הבדיקה</label>
+      <div class="time-range-box">
+        <div class="time-picker-wrap">
+          <span class="tp-label tp-label-start">מ־</span>
+          <div class="time-picker tp-start">
+            <span class="tp-ic">🟢</span>
+            <select class="tp-sel tp-hour" id="fStartHour"></select>
+            <span class="tp-colon">:</span>
+            <select class="tp-sel tp-min" id="fStartMin"><option value="00">00</option><option value="30">30</option></select>
+          </div>
+        </div>
+        <span class="time-range-arrow">←</span>
+        <div class="time-picker-wrap">
+          <span class="tp-label tp-label-end">עד</span>
+          <div class="time-picker tp-end">
+            <span class="tp-ic">🔴</span>
+            <select class="tp-sel tp-hour" id="fEndHour"></select>
+            <span class="tp-colon">:</span>
+            <select class="tp-sel tp-min" id="fEndMin"><option value="00">00</option><option value="30">30</option></select>
+          </div>
+        </div>
+      </div>
+      <div class="dur-chips">
+        <button type="button" class="dur-chip" onclick="setDuration('f',1)">⏱ שעה</button>
+        <button type="button" class="dur-chip" onclick="setDuration('f',1.5)">⏱ שעה וחצי</button>
+        <button type="button" class="dur-chip" onclick="setDuration('f',2)">⏱ שעתיים</button>
+      </div>
     </div>
     <div class="fg"><label>מבנה <span style="color:#dc2626">*</span></label>
       <div class="mchips" id="fBuildChips"></div>
@@ -1740,9 +1922,34 @@ button:active{transform:scale(.96)}
       <div class="fg"><label>מבנה</label><select id="efBuild" onchange="updateEditFloors(this.value,'')"><option>10a</option><option>10b</option><option>10c</option></select></div>
       <div class="fg"><label>סבב</label><select id="efRound"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
     </div>
-    <div class="frow">
-      <div class="fg"><label>שעת התחלה</label><input type="time" id="efStartTime"/></div>
-      <div class="fg"><label>שעת סיום</label><input type="time" id="efEndTime"/></div>
+    <div class="fg">
+      <label>שעות הבדיקה</label>
+      <div class="time-range-box">
+        <div class="time-picker-wrap">
+          <span class="tp-label tp-label-start">מ־</span>
+          <div class="time-picker tp-start">
+            <span class="tp-ic">🟢</span>
+            <select class="tp-sel tp-hour" id="efStartHour"></select>
+            <span class="tp-colon">:</span>
+            <select class="tp-sel tp-min" id="efStartMin"><option value="00">00</option><option value="30">30</option></select>
+          </div>
+        </div>
+        <span class="time-range-arrow">←</span>
+        <div class="time-picker-wrap">
+          <span class="tp-label tp-label-end">עד</span>
+          <div class="time-picker tp-end">
+            <span class="tp-ic">🔴</span>
+            <select class="tp-sel tp-hour" id="efEndHour"></select>
+            <span class="tp-colon">:</span>
+            <select class="tp-sel tp-min" id="efEndMin"><option value="00">00</option><option value="30">30</option></select>
+          </div>
+        </div>
+      </div>
+      <div class="dur-chips">
+        <button type="button" class="dur-chip" onclick="setDuration('ef',1)">⏱ שעה</button>
+        <button type="button" class="dur-chip" onclick="setDuration('ef',1.5)">⏱ שעה וחצי</button>
+        <button type="button" class="dur-chip" onclick="setDuration('ef',2)">⏱ שעתיים</button>
+      </div>
     </div>
     <div class="frow">
       <div class="fg"><label>קומה</label><select id="efFloor"></select></div>
@@ -2101,6 +2308,9 @@ async function sync(){
     parseChecks(j.checks||[]);
     parseStaff(j.staff||[]);
     refresh();ss('ok','מחובר');
+    // הבהוב עדין שמאותת "הנתונים רעננים"
+    const wc=document.getElementById('weekCal');
+    if(wc){wc.classList.remove('just-synced');void wc.offsetWidth;wc.classList.add('just-synced');}
   }catch(e){
     console.error('שגיאה:',e.message);
     ss('err','שגיאת חיבור');
@@ -2199,6 +2409,40 @@ function toggleBuild(b,el){
   else{selBuild.push(b);el.classList.add('on');}
   updateFloors();
 }
+// ===== בורר שעות – אתחול, קריאה/כתיבה, וקפיצות זמן מוכנות מראש =====
+function initTimePickers(){
+  const hourOpts=Array.from({length:16},(_,i)=>String(i+6).padStart(2,'0'))  // 06 עד 21
+    .map(h=>`<option value="${h}">${h}</option>`).join('');
+  ['fStartHour','fEndHour','efStartHour','efEndHour'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.innerHTML=hourOpts;
+  });
+}
+function getTimeVal(prefix,which){  // which: 'Start' | 'End'
+  const h=document.getElementById(prefix+which+'Hour').value;
+  const m=document.getElementById(prefix+which+'Min').value;
+  return h+':'+m;
+}
+function setTimeVal(prefix,which,timeStr){
+  const parts=(timeStr||'09:00').split(':');
+  let h=parts[0]||'09', m=parts[1]||'00';
+  h=String(Math.min(21,Math.max(6,Number(h)||9))).padStart(2,'0');  // הגבלה לטווח 06–21
+  // עיגול לקפיצה הקרובה של 30 דקות
+  m=(Number(m)<30)?'00':'30';
+  document.getElementById(prefix+which+'Hour').value=h;
+  document.getElementById(prefix+which+'Min').value=m;
+}
+function setDuration(prefix,hoursDur){
+  const sh=Number(document.getElementById(prefix+'StartHour').value);
+  const sm=Number(document.getElementById(prefix+'StartMin').value);
+  let totalMin=sh*60+sm+Math.round(hoursDur*60);
+  totalMin=Math.min(totalMin,21*60+30);  // לא חורג מגבול השעות (06:00–21:30)
+  const eh=Math.floor(totalMin/60),em=totalMin%60;
+  document.getElementById(prefix+'EndHour').value=String(eh).padStart(2,'0');
+  document.getElementById(prefix+'EndMin').value=(em<30)?'00':'30';
+}
+initTimePickers();
+
 function updateFloors(){
   const box=document.getElementById('fFloorChips');
   const keepFloors=[...selFloors];
@@ -2435,7 +2679,7 @@ function renderG(){
     const evHtml=dayChecks.map(c=>{
       const idx=checks.indexOf(c);
       const names=c.crew.map(p=>p.name).join(', ');
-      return`<div class="wd-ev" style="background:${colBg(c.domain)}" onclick="event.stopPropagation();showDpop(event,${idx})">
+      return`<div class="wd-ev" style="background:${colBg(c.domain)};--glow:${colPrimary(c.domain)}55" onclick="event.stopPropagation();showDpop(event,${idx})">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
           <div class="wd-ev-bld">${c.title||'בדיקה'} ב${c.building} | ק׳${c.floor}</div>
           <span title="${c.status||'טרם התחיל'}" style="width:9px;height:9px;border-radius:50%;background:#fff;flex-shrink:0;opacity:.9;box-shadow:0 0 4px rgba(0,0,0,.3),inset 0 0 0 2.5px ${statusColor(c.status)};display:block"></span>
@@ -2917,6 +3161,19 @@ function animateNum(el,target){
 }
 
 // קונפטי – חגיגה קטנה כשבדיקה מסומנת "בוצע" 🎉
+// ריפל עדין בלחיצה על כפתורים ראשיים
+document.addEventListener('click',(e)=>{
+  const btn=e.target.closest('.btn-new,.btn-save,.imp-btn-go,.dpop-inv-btn,.lexport-btn');
+  if(!btn||btn.disabled) return;
+  const r=btn.getBoundingClientRect();
+  const dot=document.createElement('span');
+  dot.className='ripple-dot';
+  dot.style.left=(e.clientX-r.left-7)+'px';
+  dot.style.top=(e.clientY-r.top-7)+'px';
+  btn.appendChild(dot);
+  setTimeout(()=>dot.remove(),600);
+});
+
 function fireConfetti(){
   const colors=['#f97316','#34d399','#2563eb','#facc15','#ec4899','#8b5cf6'];
   for(let i=0;i<45;i++){
@@ -3046,10 +3303,8 @@ function openEditModal(idx){
   const efR=document.getElementById('efRound');
   if(efR) efR.value=c.round||'1';
   const hoursParts=(c.hours||'09:00-10:00').split('-');
-  const efST=document.getElementById('efStartTime');
-  const efET=document.getElementById('efEndTime');
-  if(efST) efST.value=hoursParts[0]||'09:00';
-  if(efET) efET.value=hoursParts[1]||'10:00';
+  setTimeVal('ef','Start',hoursParts[0]||'09:00');
+  setTimeVal('ef','End',hoursParts[1]||'10:00');
 
   // אפס שדה מסמך והצג חיווי אם כבר מצורף
   const efF=document.getElementById('efFile');
@@ -3103,8 +3358,8 @@ async function saveEdit(){
   const floor=document.getElementById('efFloor').value;
   const title=document.getElementById('efTitle').value.trim();
   const round=document.getElementById('efRound').value;
-  const startTime=document.getElementById('efStartTime').value||'09:00';
-  const endTime=document.getElementById('efEndTime').value||'10:00';
+  const startTime=getTimeVal('ef','Start');
+  const endTime=getTimeVal('ef','End');
   const domain=document.getElementById('efDomain').value;
   const subtype=document.getElementById('efSubDomain').value;
   if(!subtype){toast('יש לבחור סוג בדיקה','warn');document.getElementById('efSubDomain').focus();return;}
@@ -3579,8 +3834,8 @@ function openModal(){
   renderBuildChips();
   updateFloors();
   document.getElementById('fRound').value='1';
-  document.getElementById('fStartTime').value='09:00';
-  document.getElementById('fEndTime').value='10:00';
+  setTimeVal('f','Start','09:00');
+  setTimeVal('f','End','10:00');
   renderStaff('');
   document.getElementById('moverlay').classList.add('on');
   document.body.style.overflow='hidden';
@@ -3682,8 +3937,8 @@ async function submit(){
   const building=selBuild.join(', ');
   const floor=selFloors.join(', ');
   const round=document.getElementById('fRound').value;
-  const startTime=document.getElementById('fStartTime').value||'09:00';
-  const endTime=document.getElementById('fEndTime').value||'10:00';
+  const startTime=getTimeVal('f','Start');
+  const endTime=getTimeVal('f','End');
   const title=document.getElementById('fTitle').value.trim();
   const subDom=document.getElementById('fSubDomain').value;
   if(!date||!sel.length){toast('יש למלא תאריך ולבחור צוות','warn');return;}
