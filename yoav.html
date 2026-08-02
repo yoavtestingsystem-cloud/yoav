@@ -991,7 +991,8 @@ button:active{transform:scale(.96)}
   padding:2px 4px;margin-bottom:2px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;
 }
-.month-more{font-size:9px;font-weight:800;color:var(--muted);text-align:center}
+.month-more{font-size:9px;font-weight:800;color:var(--muted);text-align:center;cursor:pointer;border-radius:4px;padding:1px 0;transition:all .15s}
+.month-more:hover{background:var(--navy);color:#fff;transform:scale(1.05)}
 @media(min-width:769px){
   .mobile-view-toggle{max-width:320px}
   .month-view{padding:16px}
@@ -1622,6 +1623,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
     <button class="btn-hdr btn-mob-preview named-admin-only" onclick="toggleMobilePreview()" title="תצוגה מקדימה כמו במובייל">📱 מובייל</button>
     <button class="btn-hdr" onclick="syncData()">↻ רענון</button>
     <button class="btn-hdr named-admin-only" onclick="openImport()" title="ייבוא בדיקות מקובץ אקסל">📥 ייבוא מאקסל</button>
+    <button class="btn-hdr named-admin-only" id="schedUpdateBtn" onclick="updateSchedule()" title="שליחת עדכון זימון ל-50 הלו״זים הקרובים" style="display:inline-flex;align-items:center;gap:6px"><div class="btn-spinner"></div><span id="schedUpdateBtnTxt">🔄 עדכון לו"ז</span></button>
     <button class="btn-new btn-hdr-new admin-only" onclick="togglePlusMenu(event,this)">＋ בדיקה חדשה</button>
   </div>
 </header>
@@ -2022,6 +2024,19 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
   </div>
 </div>
 
+<div class="hfp-overlay" id="dayPopOverlay" onclick="if(event.target===this)closeDayPopup()">
+  <div class="hfp-box">
+    <div class="hfp-hdr">
+      <div>
+        <div class="hfp-title" id="dayPopTitle"></div>
+        <div class="hfp-sub" id="dayPopSub"></div>
+      </div>
+      <button class="hfp-close" onclick="closeDayPopup()">✕</button>
+    </div>
+    <div class="hfp-body" id="dayPopBody"></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <footer class="credit-footer">
@@ -2037,7 +2052,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
 
 <script>
 // ============================================================
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz7gatpMiruEqN53ITuMzpBs0QOajkScQl4I_6UZrr9fNFAWjySYRe6roE7MvMKENdHJg/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxVpuMgG9MUiJFs0f2t6fJriuACD7Fs9dbRPzdQw9oVJXPUdt8sp6lspMxqSwL7p6bmbA/exec';
 // ============================================================
 
 
@@ -2603,7 +2618,7 @@ function renderMonth(){
       const idx=checks.indexOf(c);
       return `<div class="month-ev" style="background:${colBg(c.domain)}" onclick="event.stopPropagation();showDpop(event,${idx})"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.7);margin-left:4px;vertical-align:middle"></span>${c.title||'בדיקה'} ב${c.building}</div>`;
     }).join('');
-    if(evs.length>3) evHtml+=`<div class="month-more">+${evs.length-3} נוספות</div>`;
+    if(evs.length>3) evHtml+=`<div class="month-more" onclick="event.stopPropagation();showDayPopup('${dateStr}')">+${evs.length-3} נוספות</div>`;
     h+=`<div class="${cls}" onclick="cellClickDate('${dateStr}')"><div class="month-cell-num">${d}</div>${evHtml}</div>`;
   }
   // next month
@@ -2853,6 +2868,41 @@ function showHoloFloor(bld,fl){
 }
 function closeHoloFloor(){document.getElementById('hfpOverlay').classList.remove('on');}
 
+// ===== פופ-אפ יום מלא – כל הבדיקות ביום, מתוך תצוגת החודש =====
+function showDayPopup(dateStr){
+  const [y,m,d]=dateStr.split('-').map(Number);
+  const dayChecks=checks.filter(c=>c.date&&c.date.getFullYear()===y&&c.date.getMonth()+1===m&&c.date.getDate()===d);
+  const dt=new Date(y,m-1,d);
+  document.getElementById('dayPopTitle').textContent=`📅 ${dt.toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}`;
+  document.getElementById('dayPopSub').textContent=dayChecks.length+' בדיקות ביום זה';
+
+  const sorted=[...dayChecks].sort((a,b)=>(a.hours||'').localeCompare(b.hours||''));
+
+  const itemHtml=c=>{
+    const idx=checks.indexOf(c);
+    const crewNames=[...new Set(c.crew.map(p=>p.name))];
+    return `<div class="hfp-item" onclick="closeDayPopup();openEditModal(${idx})" title="לחץ לעריכת הבדיקה">
+      <div class="hfp-item-top">
+        <div>
+          <div class="hfp-date">${c.hours?'🕐 '+c.hours+' · ':''}${c.title||'בדיקה'}</div>
+          <div class="hfp-rel">🏢 ${c.building} · קומה ${c.floor}</div>
+        </div>
+        <span class="hfp-status" style="background:${statusColor(c.status)}">${c.status||'ללא סטטוס'}</span>
+      </div>
+      <div class="hfp-item-meta">
+        <span class="hfp-tag">🔧 ${c.domain||'ללא תחום'}${c.subtype?' · '+c.subtype:''}</span>
+        ${crewNames.map(n=>`<span class="hfp-tag">👤 ${n}</span>`).join('')}
+      </div>
+    </div>`;
+  };
+
+  document.getElementById('dayPopBody').innerHTML=sorted.length
+    ? sorted.map(itemHtml).join('')
+    : '<div class="hfp-empty">🔍 לא נמצאו בדיקות ביום זה</div>';
+  document.getElementById('dayPopOverlay').classList.add('on');
+}
+function closeDayPopup(){document.getElementById('dayPopOverlay').classList.remove('on');}
+
 // DETAIL POPUP
 let _dpopCheck=null,_dpopIdx=-1;
 // ===== שיתוף פרטי בדיקה לוואטסאפ =====
@@ -2953,6 +3003,46 @@ function closeDocPreview(){
 // ===== ייבוא בדיקות מאקסל =====
 let _impRows=[];
 
+// ===== עדכון לו"ז – שליחת עדכון זימון ל-50 הלו"זים הקרובים =====
+async function updateSchedule(){
+  const cleanUser=(currentUser||'').replace(/[\u200e\u200f\u202a-\u202e]/g,'').trim().toLowerCase();
+  if(cleanUser!=='אדמין'&&cleanUser!=='admin'){toast('פעולה זו זמינה רק למשתמש אדמין','err');return;}
+
+  const today=new Date();today.setHours(0,0,0,0);
+  const upcoming=checks.filter(c=>c.date&&c.date>=today).length;
+  if(!upcoming){toast('אין בדיקות עתידיות לעדכון','warn');return;}
+
+  if(!confirm(`הפעולה תשלח עדכון זימון מחדש ל-${Math.min(50,upcoming)} הלו"זים הקרובים, לכל אנשי הצוות שבהם. להמשיך?`)) return;
+
+  const btn=document.getElementById('schedUpdateBtn');
+  const txt=document.getElementById('schedUpdateBtnTxt');
+  try{
+    btn.classList.add('btn-spinning');
+    txt.textContent='שולח עדכון ל-50 לו"זים...';
+    showAppLoader('שולח עדכון זימון ללו"זים הקרובים...');
+    ss('loading','מעדכן...');
+    const data=JSON.stringify({user:currentUser,limit:50});
+    const r=await fetch(SCRIPT_URL+'?action=updateSchedule&data='+encodeURIComponent(data));
+    const j=await r.json();
+    console.log('תשובת updateSchedule:',j);
+    if(j.ok){
+      toast(`✅ נשלח עדכון ל-${j.updated} בדיקות (${j.peopleNotified} אנשי צוות)`+(j.limited?` · ⚠️ ${j.limited} לא נשלחו עקב מגבלה יומית`:''),j.limited?'warn':'ok');
+      showAppLoader('מסנכרן נתונים...');
+      await sync();
+    } else {
+      toast('שגיאה: '+(j.error||'לא ידוע'),'err');
+    }
+    ss('ok','מחובר');
+  }catch(e){
+    console.error('שגיאת עדכון לו"ז:',e);
+    ss('err','שגיאה');toast('שגיאת רשת - העדכון נכשל','err');
+  }finally{
+    btn.classList.remove('btn-spinning');
+    txt.textContent='🔄 עדכון לו"ז';
+    hideAppLoader();
+  }
+}
+
 function openImport(){
   const cleanUser=(currentUser||'').replace(/[\u200e\u200f\u202a-\u202e]/g,'').trim().toLowerCase();
   if(cleanUser!=='אדמין'&&cleanUser!=='admin'){toast('ייבוא מאקסל זמין רק למשתמש אדמין','err');return;}
@@ -2967,7 +3057,7 @@ function openImport(){
     <button class="imp-tpl" onclick="downloadImpTemplate()">⬇️ הורד קובץ תבנית לדוגמה</button>
     <div class="imp-note">
       <b>מבנה הקובץ:</b> שורה ראשונה = כותרות, והמערכת מזהה את העמודות לפי השמות — בכל סדר:<br>
-      <b>תאריך</b> · <b>מבנה</b> (לא משנה אותיות גדולות/קטנות) · <b>קומה</b> (גם טווחים כמו "1-3" או "קרקע") · <b>תחום</b> (רשות) · <b>צוות</b> (רשות – שמות מהמערכת מופרדים בפסיק)<br>
+      <b>תאריך</b> · <b>מבנה</b> (לא משנה אותיות גדולות/קטנות) · <b>קומה</b> (גם טווחים כמו "1-3" או "קרקע") · <b>תחום</b> (רשות) · <b>שעות</b> (רשות – בפורמט "09:00-10:30"; בלי ערך = ברירת מחדל 09:00-10:00) · <b>צוות</b> (רשות – שמות מהמערכת מופרדים בפסיק)<br>
       שורה עם צוות מקבלת זימון ליומן אוטומטית; שורה בלי צוות נשמרת ללא זימון.
       ${typeof window._invitesLeft!=='undefined'?`<br><b>📨 נותרו להיום: ${window._invitesLeft} זימונים</b> (מגבלת גוגל – בדיקות מעבר לכך יישמרו ללא מייל זימון)`:''}
     </div>`;
@@ -2978,11 +3068,11 @@ function closeImport(){document.getElementById('impOverlay').classList.remove('o
 
 function downloadImpTemplate(){
   const ws=XLSX.utils.aoa_to_sheet([
-    ['תאריך','מבנה','קומה','תחום','צוות'],
-    ['25/07/2026','10a','3','בדיקות','איציק דבוש'],
-    ['26/07/2026','10b','1','כללי','שמעון חג\'ג\', מיטל קראווני']
+    ['תאריך','מבנה','קומה','תחום','שעות','צוות'],
+    ['25/07/2026','10a','3','בדיקות','09:00-10:30','איציק דבוש'],
+    ['26/07/2026','10b','1','כללי','13:00-14:00','שמעון חג\'ג\', מיטל קראווני']
   ]);
-  ws['!cols']=[{wch:12},{wch:8},{wch:6},{wch:12},{wch:30}];
+  ws['!cols']=[{wch:12},{wch:8},{wch:6},{wch:12},{wch:13},{wch:30}];
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,'בדיקות');
   XLSX.writeFile(wb,'תבנית-ייבוא-בדיקות.xlsx');
@@ -3030,6 +3120,7 @@ function impDetectCols(hdr){
     domain: find('תחום'),
     subtype: find('סוג'),
     round: find('סבב'),
+    hours: find('שעות','שעה'),
     crew: find('צוות','שם צוות')
   };
   // אם הכותרות לא זוהו – נופלים לסדר התבנית הקלאסי
@@ -3077,14 +3168,29 @@ function buildImpPreview(hdrRow,dataRows){
     else if(missing.length) warns.push('לא נמצאו (ידולגו): '+missing.join(', '));
     if(!namesRaw.length) warns.push('ללא צוות – הבדיקה תישמר בלי זימון');
 
+    // שעות – רשות; פורמט "09:00-10:00". בלי ערך = ברירת מחדל 09:00-10:00 בשרת
+    const hoursRaw=String(get(map.hours)||'').trim();
+    let hours='';
+    if(hoursRaw){
+      const hm=hoursRaw.replace(/\s/g,'').match(/^(\d{1,2}):?(\d{2})?-(\d{1,2}):?(\d{2})?$/);
+      if(hm){
+        const sh=hm[1].padStart(2,'0'), sm=(hm[2]||'00');
+        const eh=hm[3].padStart(2,'0'), em=(hm[4]||'00');
+        if(Number(sh)<24&&Number(eh)<24&&Number(sm)<60&&Number(em)<60){
+          hours=sh+':'+sm+'-'+eh+':'+em;
+        } else warns.push('שעות לא תקינות – ישמר לפי ברירת מחדל (09:00-10:00)');
+      } else warns.push('פורמט שעות לא זוהה ("'+hoursRaw+'") – ישמר לפי ברירת מחדל');
+    }
+
     const ok=errs.length===0;
     const dateStr=d?String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear():String(get(map.date)||'—');
-    items.push({ok,errs,warns,label:`${dateStr} · ${building||'—'} · קומה ${floor} · ${domain}${namesRaw.length?' · '+namesRaw.join(', '):''}`});
+    items.push({ok,errs,warns,label:`${dateStr}${hours?' '+hours:''} · ${building||'—'} · קומה ${floor} · ${domain}${namesRaw.length?' · '+namesRaw.join(', '):''}`});
     if(ok){
       const iso=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
       _impRows.push({date:iso,building,floor,domain,
         subtype:String(get(map.subtype)||'').trim(),
         round:String(get(map.round)||'').trim(),
+        hours,
         name:crew.map(p=>p.name).join(', '),
         email:crew.map(p=>p.email).join(', ')});
     }
