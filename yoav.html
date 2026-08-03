@@ -221,6 +221,24 @@ button:active{transform:scale(.96)}
 .cd.sel::after{background:rgba(255,255,255,.7)}
 .cd.wk{color:#e11d48}
 .cd.sel.wk{color:#fda4af}
+
+/* ===== חגי ישראל – סימון בלוח ===== */
+.cd.hol{color:#15803d;font-weight:800}
+.cd.hol::before{
+  content:'✡️';position:absolute;top:1px;font-size:7px;opacity:.85;
+}
+.cd.sel.hol{color:#fff}
+
+.holiday-cell{background:linear-gradient(180deg,#f0fdf4,#dcfce7)!important;border-color:#86efac!important}
+.holiday-cell:hover{border-color:#16a34a!important}
+.holiday-badge{
+  display:flex;align-items:center;gap:3px;font-size:9px;font-weight:800;color:#15803d;
+  background:rgba(255,255,255,.7);border-radius:6px;padding:1px 5px;margin:2px 0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;
+}
+.holiday-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.week-day.holiday-cell .wd-hdr{background:linear-gradient(180deg,#dcfce7,#bbf7d0)}
+
 .mcal-foot{padding:9px 11px;border-top:1px solid var(--border)}
 .today-btn{width:100%;background:var(--bg);border:1.5px solid var(--border2);color:var(--text);border-radius:var(--rsm);padding:8px;font-size:12px;font-weight:700;transition:all .18s}
 .today-btn:hover{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;border-color:transparent}
@@ -2052,7 +2070,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
 
 <script>
 // ============================================================
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxVpuMgG9MUiJFs0f2t6fJriuACD7Fs9dbRPzdQw9oVJXPUdt8sp6lspMxqSwL7p6bmbA/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwsTzVIf2Z7pBsHhhdtYgzYiHaI0u4E62Cw5ptscVX5UwEUevW81-OLGCfhgIE8pRA_9Q/exec';
 // ============================================================
 
 
@@ -2137,6 +2155,21 @@ function colBgAlpha(d,alpha){
 }
 
 let checks=[],staff=[],blds=[],bldFloors={},sel=[];
+let holidays=new Map();  // 'YYYY-MM-DD' → שם החג
+
+function parseHolidays(raw){
+  holidays=new Map();
+  (raw||[]).forEach(h=>{
+    if(!h||!h.date) return;
+    const d=pd(h.date);  // אותו פענוח תאריך DD/MM/YY שכבר קיים באתר
+    if(!d) return;
+    const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    holidays.set(key,h.name||'חג');
+  });
+}
+function getHoliday(y,m,d){  // m: 0-indexed חודש
+  return holidays.get(y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'));
+}
 let Y,M,selD;
 
 
@@ -2222,6 +2255,7 @@ async function doLogin(){
     // המשך טעינה רגילה
     parseChecks(j.checks||[]);
     parseStaff(j.staff||[]);
+    parseHolidays(j.holidays||[]);
     refresh();
     setTimeout(()=>applyRoleUI(),50); // אחרי render
     ss('ok','מחובר | '+currentUser);
@@ -2322,6 +2356,7 @@ async function sync(){
     if(typeof j.invitesLeft!=='undefined') window._invitesLeft=j.invitesLeft;
     parseChecks(j.checks||[]);
     parseStaff(j.staff||[]);
+    parseHolidays(j.holidays||[]);
     refresh();ss('ok','מחובר');
     // הבהוב עדין שמאותת "הנתונים רעננים"
     const wc=document.getElementById('weekCal');
@@ -2537,7 +2572,8 @@ function renderCal(){
     const t=dt.toDateString()===today.toDateString();
     const s=selD&&dt.toDateString()===selD.toDateString();
     const w=dt.getDay()===5||dt.getDay()===6;
-    const c=[t&&!s?'tod':'',s?'sel':'',w?'wk':'',ev.has(d)?'ev':''].filter(Boolean).join(' ');
+    const isHol=!!getHoliday(Y,M,d);
+    const c=[t&&!s?'tod':'',s?'sel':'',w?'wk':'',ev.has(d)?'ev':'',isHol?'hol':''].filter(Boolean).join(' ');
     h+=`<div class="cd ${c}" onclick="pickDay(${d})">${d}</div>`;
   }
   const rem=(fd+dim)%7;
@@ -2611,15 +2647,17 @@ function renderMonth(){
     const dt=new Date(Y,M,d);
     const isToday=dt.toDateString()===today.toDateString();
     const isWk=dt.getDay()===5||dt.getDay()===6;
-    const cls='month-cell'+(isToday?' today-cell':'')+(isWk?' weekend-cell':'');
+    const hol=getHoliday(Y,M,d);
+    const cls='month-cell'+(isToday?' today-cell':'')+(isWk?' weekend-cell':'')+(hol?' holiday-cell':'');
     const dateStr=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
     const evs=map[d]||[];
+    const holBadge=hol?`<div class="holiday-badge" title="${hol}">✡️ <span class="holiday-name">${hol}</span></div>`:'';
     let evHtml=evs.slice(0,3).map(c=>{
       const idx=checks.indexOf(c);
       return `<div class="month-ev" style="background:${colBg(c.domain)}" onclick="event.stopPropagation();showDpop(event,${idx})"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.7);margin-left:4px;vertical-align:middle"></span>${c.title||'בדיקה'} ב${c.building}</div>`;
     }).join('');
     if(evs.length>3) evHtml+=`<div class="month-more" onclick="event.stopPropagation();showDayPopup('${dateStr}')">+${evs.length-3} נוספות</div>`;
-    h+=`<div class="${cls}" onclick="cellClickDate('${dateStr}')"><div class="month-cell-num">${d}</div>${evHtml}</div>`;
+    h+=`<div class="${cls}" onclick="cellClickDate('${dateStr}')"><div class="month-cell-num">${d}</div>${holBadge}${evHtml}</div>`;
   }
   // next month
   const total=firstDay+dim;
@@ -2687,9 +2725,11 @@ function renderG(){
     const dt=new Date(weekStart);dt.setDate(weekStart.getDate()+i);
     const isToday=dt.toDateString()===today.toDateString();
     const isWk=dt.getDay()===5||dt.getDay()===6;
+    const hol=getHoliday(dt.getFullYear(),dt.getMonth(),dt.getDate());
     const dayChecks=map[dt.toDateString()]||[];
-    const cls='week-day'+(isToday?' today':'')+(isWk?' weekend':'');
+    const cls='week-day'+(isToday?' today':'')+(isWk?' weekend':'')+(hol?' holiday-cell':'');
     const dateStr=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
+    const holBadge=hol?`<div class="holiday-badge" title="${hol}">✡️ <span class="holiday-name">${hol}</span></div>`:'';
 
     const evHtml=dayChecks.map(c=>{
       const idx=checks.indexOf(c);
@@ -2707,6 +2747,7 @@ function renderG(){
       <div class="wd-hdr">
         <div class="wd-name">${dayNames[dt.getDay()]}</div>
         <div class="wd-num">${dt.getDate()}</div>
+        ${holBadge}
       </div>
       <div class="wd-body">
         ${evHtml}
