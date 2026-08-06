@@ -4335,6 +4335,23 @@ function endTour(){
   try{localStorage.setItem('yoavTourDone','1');}catch(e){}
 }
 
+// ===== רענון אוטומטי לעמוד אחרי 5 דקות פעילות =====
+function scheduleAutoRefresh(){
+  const AUTO_REFRESH_MS=5*60*1000;  // 5 דקות
+  setTimeout(function checkAndRefresh(){
+    const openOverlays=['moverlay','editOverlay','distOverlay','impOverlay','plusMenuOverlay',
+      'docprevOverlay','hfpOverlay','holoOverlay','dayPopOverlay','ppopOverlay','dpopOverlay']
+      .some(id=>{const el=document.getElementById(id);return el&&el.classList.contains('on');});
+    if(openOverlays){
+      // יש חלון פתוח (למשל טופס בעריכה) – לא לרענן עכשיו כדי לא לאבד מידע, ננסה שוב בעוד דקה
+      setTimeout(checkAndRefresh,60*1000);
+    } else {
+      window.location.reload();
+    }
+  },AUTO_REFRESH_MS);
+}
+if(window.self===window.top) scheduleAutoRefresh();
+
 // הפעלה אוטומטית בכניסה ראשונה (לא בתוך תצוגת המובייל המקדימה)
 window.addEventListener('load',()=>{
   if(window.self!==window.top) return;
