@@ -286,6 +286,8 @@ button:active{transform:scale(.96)}
 .week-day.weekend .wd-num{color:#e11d48}
 .wd-body{padding:6px 5px;display:flex;flex-direction:column;gap:3px;cursor:pointer}
 .wd-ev{border-radius:6px;padding:5px 7px;font-size:10.5px;font-weight:600;color:#fff;line-height:1.35;cursor:pointer;transition:transform .12s,box-shadow .12s;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.month-dist,.wd-dist{background:#94a3b8!important;color:#fff}
+.month-dist:hover,.wd-dist:hover{background:#64748b!important}
 .wd-ev:hover{transform:scale(1.04) translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.25)}
 .wd-ev-bld{font-weight:800;font-size:11px}
 .wd-ev-crew{opacity:.85;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1824,7 +1826,10 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
       <div class="mchips-hint">אפשר לבחור כמה תחומים – רשימת הצוות תתעדכן בהתאם</div>
     </div>
     <div class="frow">
-      <div class="fg"><label>סוג הבדיקה <span style="color:#dc2626">*</span></label><select id="fSubDomain"></select></div>
+      <div class="fg"><label>סוג הבדיקה <span style="color:#dc2626">*</span></label>
+        <div class="mchips" id="fSubChips"></div>
+        <div class="mchips-hint">אפשר לבחור כמה סוגי בדיקה</div>
+      </div>
     </div>
     <div class="fg"><label>שם הבדיקה (רשות)</label><input type="text" id="fTitle" placeholder='ברירת מחדל: "בדיקה"' maxlength="40"/></div>
     <div class="fg">
@@ -1978,7 +1983,10 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
     <div class="frow">
       <div class="fg"><label>קומה</label><select id="efFloor"></select></div>
       <div class="fg"><label>תחום הבדיקה</label><select id="efDomain" onchange="onEditDomChange()"><option>מאיפנים</option><option>בדיקות</option><option>יועצים</option><option>אחר</option></select></div>
-      <div class="fg"><label>סוג הבדיקה <span style="color:#dc2626">*</span></label><select id="efSubDomain"></select></div>
+      <div class="fg"><label>סוג הבדיקה <span style="color:#dc2626">*</span></label>
+        <div class="mchips" id="efSubChips"></div>
+        <div class="mchips-hint">אפשר לבחור כמה סוגי בדיקה</div>
+      </div>
     </div>
     <div class="fg"><label>שם הבדיקה (רשות)</label><input type="text" id="efTitle" placeholder='ברירת מחדל: "בדיקה"' maxlength="40"/></div>
     <div class="fg">
@@ -2075,7 +2083,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
 
 <script>
 // ============================================================
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzuECKUfgVo19YeeYDoEMXS2PN2fwpklXUKuHdgg_XcrcVo9GPCT2WBTq5QSGZ2LshIcQ/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyRRlf-cOpasB0bg00UbiC3lGwqogqU_hcC_fPWxnv9gWXrjye4LuvyYGdllaflej_6rQ/exec';
 // ============================================================
 
 
@@ -2161,6 +2169,17 @@ function colBgAlpha(d,alpha){
 
 let checks=[],staff=[],blds=[],bldFloors={},sel=[];
 let holidays=new Map();  // 'YYYY-MM-DD' → שם החג
+let distributions=[];  // [{date,building,floor,name}]
+
+function parseDistributions(raw){
+  distributions=[];
+  (raw||[]).forEach(d=>{
+    if(!d||!d.date) return;
+    const dt=pd(d.date);
+    if(!dt) return;
+    distributions.push({date:dt,building:d.building||'',floor:d.floor||'',name:d.name||'הפצה'});
+  });
+}
 
 function parseHolidays(raw){
   holidays=new Map();
@@ -2174,6 +2193,9 @@ function parseHolidays(raw){
 }
 function getHoliday(y,m,d){  // m: 0-indexed חודש
   return holidays.get(y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'));
+}
+function getDistForDay(y,m,d){  // m: 0-indexed חודש
+  return distributions.filter(x=>x.date&&x.date.getFullYear()===y&&x.date.getMonth()===m&&x.date.getDate()===d);
 }
 let Y,M,selD;
 
@@ -2261,6 +2283,7 @@ async function doLogin(){
     parseChecks(j.checks||[]);
     parseStaff(j.staff||[]);
     parseHolidays(j.holidays||[]);
+    parseDistributions(j.distributions||[]);
     refresh();
     setTimeout(()=>applyRoleUI(),50); // אחרי render
     ss('ok','מחובר | '+currentUser);
@@ -2362,6 +2385,7 @@ async function sync(){
     parseChecks(j.checks||[]);
     parseStaff(j.staff||[]);
     parseHolidays(j.holidays||[]);
+    parseDistributions(j.distributions||[]);
     refresh();ss('ok','מחובר');
     // הבהוב עדין שמאותת "הנתונים רעננים"
     const wc=document.getElementById('weekCal');
@@ -2656,11 +2680,15 @@ function renderMonth(){
     const cls='month-cell'+(isToday?' today-cell':'')+(isWk?' weekend-cell':'')+(hol?' holiday-cell':'');
     const dateStr=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
     const evs=map[d]||[];
+    const dists=getDistForDay(Y,M,d);
     const holBadge=hol?`<div class="holiday-badge" title="${hol}">✡️ <span class="holiday-name">${hol}</span></div>`:'';
     let evHtml=evs.slice(0,3).map(c=>{
       const idx=checks.indexOf(c);
-      return `<div class="month-ev" style="background:${colBg(c.domain)}" onclick="event.stopPropagation();showDpop(event,${idx})"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.7);margin-left:4px;vertical-align:middle"></span>${c.title||'בדיקה'} ב${c.building}</div>`;
+      return `<div class="month-ev" style="background:${colBg(c.domain)}" onclick="event.stopPropagation();showDpop(event,${idx})"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.7);margin-left:4px;vertical-align:middle"></span>${c.building} · קומה ${c.floor}</div>`;
     }).join('');
+    evHtml+=dists.map(ds=>
+      `<div class="month-ev month-dist" onclick="event.stopPropagation();toast('📤 ${ds.name} — ${ds.building} קומה ${ds.floor}','ok')">📤 ${ds.building} · קומה ${ds.floor}</div>`
+    ).join('');
     if(evs.length>3) evHtml+=`<div class="month-more" onclick="event.stopPropagation();showDayPopup('${dateStr}')">+${evs.length-3} נוספות</div>`;
     h+=`<div class="${cls}" onclick="cellClickDate('${dateStr}')"><div class="month-cell-num">${d}</div>${holBadge}${evHtml}</div>`;
   }
@@ -2732,21 +2760,22 @@ function renderG(){
     const isWk=dt.getDay()===5||dt.getDay()===6;
     const hol=getHoliday(dt.getFullYear(),dt.getMonth(),dt.getDate());
     const dayChecks=map[dt.toDateString()]||[];
+    const dayDists=getDistForDay(dt.getFullYear(),dt.getMonth(),dt.getDate());
     const cls='week-day'+(isToday?' today':'')+(isWk?' weekend':'')+(hol?' holiday-cell':'');
     const dateStr=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
     const holBadge=hol?`<div class="holiday-badge" title="${hol}">✡️ <span class="holiday-name">${hol}</span></div>`:'';
 
     const evHtml=dayChecks.map(c=>{
       const idx=checks.indexOf(c);
-      const names=c.crew.map(p=>p.name).join(', ');
       return`<div class="wd-ev" style="background:${colBg(c.domain)};--glow:${colPrimary(c.domain)}55" onclick="event.stopPropagation();showDpop(event,${idx})">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
-          <div class="wd-ev-bld">${c.title||'בדיקה'} ב${c.building} | ק׳${c.floor}</div>
+          <div class="wd-ev-bld">${c.building} | ק׳${c.floor}</div>
           <span title="${c.status||'טרם התחיל'}" style="width:9px;height:9px;border-radius:50%;background:#fff;flex-shrink:0;opacity:.9;box-shadow:0 0 4px rgba(0,0,0,.3),inset 0 0 0 2.5px ${statusColor(c.status)};display:block"></span>
         </div>
-        <div class="wd-ev-crew">👷 ${names}</div>
       </div>`;
-    }).join('');
+    }).join('')+dayDists.map(ds=>
+      `<div class="wd-ev wd-dist" onclick="event.stopPropagation();toast('📤 ${ds.name} — ${ds.building} קומה ${ds.floor}','ok')">📤 ${ds.building} | ק׳${ds.floor}</div>`
+    ).join('');
 
     h+=`<div class="${cls}">
       <div class="wd-hdr">
@@ -3438,7 +3467,9 @@ function openEditModal(idx){
     ed.innerHTML+=`<option>${c.domain}</option>`;
   }
   ed.value=c.domain;
-  document.getElementById('efSubDomain').innerHTML=buildSubOptions(c.domain,c.subtype||null);
+  const efDomainsArr=(c.domain||'').split(',').map(x=>x.trim()).filter(Boolean);
+  editSelSubtypes=(c.subtype||'').split(',').map(x=>x.trim()).filter(Boolean);
+  renderSubtypeChips('efSubChips',efDomainsArr,editSelSubtypes);
 
   editSel=[...c.crew];
   _origCrewEmails=new Set(c.crew.map(p=>(p.email||'').toLowerCase()));
@@ -3534,8 +3565,8 @@ async function saveEdit(){
   const startTime=getTimeVal('ef','Start');
   const endTime=getTimeVal('ef','End');
   const domain=document.getElementById('efDomain').value;
-  const subtype=document.getElementById('efSubDomain').value;
-  if(!subtype){toast('יש לבחור סוג בדיקה','warn');document.getElementById('efSubDomain').focus();return;}
+  const subtype=editSelSubtypes.join(', ');
+  if(!editSelSubtypes.length){toast('יש לבחור לפחות סוג בדיקה אחד','warn');return;}
   if(startTime>=endTime){toast('שעת הסיום חייבת להיות אחרי שעת ההתחלה','warn');return;}
   const hours=startTime+'-'+endTime;
   const status=document.getElementById('efStatus')?.value||'טרם התחיל';
@@ -4027,46 +4058,48 @@ const SUBDOMAINS={
   'תפעול':['בינוי תומך תפעול','מערכות','בדיקות תפעוליות','הרצות תפעוליות'],
   'תקשוב':['פאסיבי','ביטחון','מולטימדיה','אמצעים ותקשורת','בינוי תומך תקשוב']
 };
-function buildSubOptions(dom,selected){
-  const list=SUBDOMAINS[dom]||[dom];  // תחום לא ממופה: סוג הבדיקה = התחום עצמו
-  let opts='';
-  if(list.length===1&&!selected){
-    opts=`<option selected>${list[0]}</option><option>אחר</option>`;
-  } else {
-    opts=(selected?'':'<option value="" selected disabled>בחר סוג בדיקה...</option>')+
-      list.map(s=>`<option${s===selected?' selected':''}>${s}</option>`).join('')+
-      `<option${selected==='אחר'?' selected':''}>אחר</option>`;
-    // ערך קיים שלא ברשימה (נתונים ישנים) – נוסיף אותו
-    if(selected&&![...list,'אחר'].includes(selected)){
-      opts+=`<option selected>${selected}</option>`;
-    }
-  }
-  return opts;
-}
-function updateSubDomains(){
-  const sel2=document.getElementById('fSubDomain');
-  if(!selDoms.length){
-    sel2.innerHTML='<option value="" selected disabled>בחר קודם תחום...</option>';
-    return;
-  }
-  const multi=selDoms.length>1;
+let selSubtypes=[], editSelSubtypes=[];
+
+function computeSubtypeList(domains){
+  domains=(domains||[]).filter(Boolean);
+  const multi=domains.length>1;
   const seen=new Set();const items=[];
-  selDoms.forEach(d=>{
+  domains.forEach(d=>{
     (SUBDOMAINS[d]||[d]).forEach(s=>{
       const label=multi?d+': '+s:s;
       if(!seen.has(label)){seen.add(label);items.push(label);}
     });
   });
-  if(items.length===1){
-    sel2.innerHTML=`<option selected>${items[0]}</option><option>אחר</option>`;
-  } else {
-    sel2.innerHTML='<option value="" selected disabled>בחר סוג בדיקה...</option>'+
-      items.map(s=>`<option>${s}</option>`).join('')+'<option>אחר</option>';
+  items.push('אחר');
+  return items;
+}
+function toggleSubtype(containerId,val,el){
+  const arr=containerId==='fSubChips'?selSubtypes:editSelSubtypes;
+  const i=arr.indexOf(val);
+  if(i>=0){arr.splice(i,1);el.classList.remove('on');}
+  else{arr.push(val);el.classList.add('on');}
+}
+function renderSubtypeChips(containerId,domains,selectedArr){
+  const list=computeSubtypeList(domains);
+  selectedArr.forEach(v=>{if(v&&!list.includes(v)) list.push(v);});  // ערך ישן/לא ברשימה – לא לאבד
+  document.getElementById(containerId).innerHTML=list.map(s=>{
+    const on=selectedArr.includes(s);
+    return `<div class="mchip${on?' on':''}" onclick="toggleSubtype('${containerId}','${s.replace(/'/g,"\\'")}',this)">${s}</div>`;
+  }).join('');
+}
+function updateSubDomains(){
+  if(!selDoms.length){
+    selSubtypes=[];
+    document.getElementById('fSubChips').innerHTML='<div class="mchips-hint">בחר קודם תחום...</div>';
+    return;
   }
+  selSubtypes=selSubtypes.filter(s=>computeSubtypeList(selDoms).includes(s));
+  renderSubtypeChips('fSubChips',selDoms,selSubtypes);
 }
 function onEditDomChange(){
-  const dom=document.getElementById('efDomain').value;
-  document.getElementById('efSubDomain').innerHTML=buildSubOptions(dom,null);
+  const domainsArr=(document.getElementById('efDomain').value||'').split(',').map(x=>x.trim()).filter(Boolean);
+  editSelSubtypes=editSelSubtypes.filter(s=>computeSubtypeList(domainsArr).includes(s));
+  renderSubtypeChips('efSubChips',domainsArr,editSelSubtypes);
   fEditStaff();
 }
 
@@ -4115,12 +4148,12 @@ async function submit(){
   const startTime=getTimeVal('f','Start');
   const endTime=getTimeVal('f','End');
   const title=document.getElementById('fTitle').value.trim();
-  const subDom=document.getElementById('fSubDomain').value;
+  const subDom=selSubtypes.join(', ');
   if(!date||!sel.length){toast('יש למלא תאריך ולבחור צוות','warn');return;}
   if(!selBuild.length){toast('יש לבחור לפחות מבנה אחד','warn');return;}
   if(!selFloors.length){toast('יש לבחור לפחות קומה אחת','warn');return;}
   if(!selDoms.length){toast('יש לבחור לפחות תחום אחד','warn');return;}
-  if(!subDom){toast('יש לבחור סוג בדיקה','warn');document.getElementById('fSubDomain').focus();return;}
+  if(!selSubtypes.length){toast('יש לבחור לפחות סוג בדיקה אחד','warn');return;}
   if(startTime>=endTime){toast('שעת הסיום חייבת להיות אחרי שעת ההתחלה','warn');return;}
   const hours=startTime+'-'+endTime;
   const domain=selDoms.join(', ');
@@ -4201,9 +4234,9 @@ function switchTab(id,el){
   if(id==='L') renderL();
 }
 
-// ── AUTO LOGOUT אחרי 5 דקות חוסר פעילות ──
+// ── AUTO LOGOUT אחרי חצי שעה חוסר פעילות ──
 let _logoutTimer=null;
-const LOGOUT_MS=5*60*1000; // 5 דקות
+const LOGOUT_MS=30*60*1000; // 30 דקות
 
 function resetLogoutTimer(){
   clearTimeout(_logoutTimer);
@@ -4335,19 +4368,16 @@ function endTour(){
   try{localStorage.setItem('yoavTourDone','1');}catch(e){}
 }
 
-// ===== רענון אוטומטי לעמוד אחרי 5 דקות פעילות =====
+// ===== רענון נתונים אוטומטי כל 5 דקות (בלי לצאת מהאתר) =====
 function scheduleAutoRefresh(){
   const AUTO_REFRESH_MS=5*60*1000;  // 5 דקות
-  setTimeout(function checkAndRefresh(){
+  setInterval(function(){
+    if(!currentUser) return;  // לא מחובר – אין מה לרענן
     const openOverlays=['moverlay','editOverlay','distOverlay','impOverlay','plusMenuOverlay',
       'docprevOverlay','hfpOverlay','holoOverlay','dayPopOverlay','ppopOverlay','dpopOverlay']
       .some(id=>{const el=document.getElementById(id);return el&&el.classList.contains('on');});
-    if(openOverlays){
-      // יש חלון פתוח (למשל טופס בעריכה) – לא לרענן עכשיו כדי לא לאבד מידע, ננסה שוב בעוד דקה
-      setTimeout(checkAndRefresh,60*1000);
-    } else {
-      window.location.reload();
-    }
+    if(openOverlays) return;  // יש חלון פתוח – לא נוגעים כדי לא לאבד מידע, ננסה שוב בפעם הבאה
+    sync();
   },AUTO_REFRESH_MS);
 }
 if(window.self===window.top) scheduleAutoRefresh();
