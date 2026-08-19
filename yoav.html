@@ -17,6 +17,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="יואב">
 <meta name="theme-color" content="#0f1b47">
+<link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjogIteZ15XXkNeRIOKAkyDXoNeZ15TXldecINeR15PXmden15XXqiIsICJzaG9ydF9uYW1lIjogIteZ15XXkNeRIiwgInN0YXJ0X3VybCI6ICIuIiwgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMwZjFiNDciLCAidGhlbWVfY29sb3IiOiAiIzBmMWI0NyIsICJvcmllbnRhdGlvbiI6ICJwb3J0cmFpdC1wcmltYXJ5IiwgImljb25zIjogW3sic3JjIjogImxvZ295b2F2LnBuZyIsICJzaXplcyI6ICIxOTJ4MTkyIiwgInR5cGUiOiAiaW1hZ2UvcG5nIn0sIHsic3JjIjogImxvZ295b2F2LnBuZyIsICJzaXplcyI6ICI1MTJ4NTEyIiwgInR5cGUiOiAiaW1hZ2UvcG5nIn1dfQ==">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -1644,6 +1645,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
   <div class="hdr-end">
     <div class="status-chip"><div class="sdot" id="sdot"></div><span id="stxt">טוען...</span></div>
     <button class="btn-hdr" id="tourBtn" onclick="startTour()" title="הדרכה על המערכת">❓ הדרכה</button>
+    <button class="btn-hdr" id="installBtn" onclick="handleInstallClick()" title="הוסף למסך הבית כמו אפליקציה" style="display:none">📲 הוסף למסך הבית</button>
     <button class="btn-hdr btn-mob-preview named-admin-only" onclick="toggleMobilePreview()" title="תצוגה מקדימה כמו במובייל">📱 מובייל</button>
     <button class="btn-hdr" onclick="syncData()">↻ רענון</button>
     <button class="btn-hdr named-admin-only" onclick="openImport()" title="ייבוא בדיקות מקובץ אקסל">📥 ייבוא מאקסל</button>
@@ -1907,6 +1909,32 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
 </div>
 
 <!-- EDIT MODAL -->
+<div class="moverlay" id="a2hsOverlay" onclick="if(event.target===this)closeA2HS()">
+  <div class="mbox" style="max-width:400px;text-align:center">
+    <div class="mhdr">
+      <h2>📲 הוספה למסך הבית</h2>
+      <button class="mclose" onclick="closeA2HS()">✕</button>
+    </div>
+    <p style="font-size:12.5px;color:var(--muted);margin:-4px 0 16px">
+      ככה יואב יופיע כמו אפליקציה, עם אייקון משלו וללא סרגל הכתובת:
+    </p>
+    <div style="display:flex;flex-direction:column;gap:12px;text-align:right">
+      <div style="display:flex;align-items:center;gap:12px;background:var(--surface2);border-radius:12px;padding:12px">
+        <span style="font-size:22px;flex-shrink:0">📤</span>
+        <div style="font-size:13px"><b>שלב 1:</b> הקש על כפתור השיתוף בסרגל התחתון של ספארי (הריבוע עם החץ כלפי מעלה)</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;background:var(--surface2);border-radius:12px;padding:12px">
+        <span style="font-size:22px;flex-shrink:0">➕</span>
+        <div style="font-size:13px"><b>שלב 2:</b> גלול ברשימה ובחר <b>"הוסף למסך הבית"</b> (Add to Home Screen)</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;background:var(--surface2);border-radius:12px;padding:12px">
+        <span style="font-size:22px;flex-shrink:0">✅</span>
+        <div style="font-size:13px"><b>שלב 3:</b> הקש <b>"הוסף"</b> למעלה — האייקון של יואב יופיע במסך הבית</div>
+      </div>
+    </div>
+    <button class="btn-save" onclick="closeA2HS()" style="width:100%;margin-top:18px">הבנתי, תודה!</button>
+  </div>
+</div>
 <div class="moverlay" id="distOverlay" onclick="if(event.target===this)closeDistModal()">
   <div class="mbox" style="max-width:420px">
     <div class="mhdr">
@@ -4305,6 +4333,49 @@ const TOUR_STEPS=[
   {sel:'#tourBtn', title:'❓ צריך תזכורת?', txt:'ההדרכה הזו זמינה תמיד בכפתור הזה. בהצלחה! 🎉'}
 ];
 let _tourIdx=0;
+
+// ===== התקנה למסך הבית (PWA) =====
+let deferredInstallPrompt=null;
+
+function isIOS(){return /iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;}
+function isStandaloneApp(){return window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;}
+
+window.addEventListener('beforeinstallprompt',(e)=>{
+  if(window.self!==window.top) return;
+  e.preventDefault();
+  deferredInstallPrompt=e;
+  const btn=document.getElementById('installBtn');
+  if(btn&&!isStandaloneApp()) btn.style.display='';
+});
+window.addEventListener('appinstalled',()=>{
+  deferredInstallPrompt=null;
+  const btn=document.getElementById('installBtn');
+  if(btn) btn.style.display='none';
+  toast('📲 יואב הותקן בהצלחה!','ok');
+});
+
+async function handleInstallClick(){
+  if(deferredInstallPrompt){
+    deferredInstallPrompt.prompt();
+    try{ await deferredInstallPrompt.userChoice; }catch(e){}
+    deferredInstallPrompt=null;
+  } else if(isIOS()){
+    showA2HSInstructions();
+  } else {
+    toast('בדפדפן הזה אין תמיכה בהתקנה אוטומטית — נסה מספארי או כרום במובייל','warn');
+  }
+}
+function showA2HSInstructions(){document.getElementById('a2hsOverlay').classList.add('on');}
+function closeA2HS(){document.getElementById('a2hsOverlay').classList.remove('on');}
+
+window.addEventListener('load',()=>{
+  if(window.self!==window.top) return;  // לא בתוך תצוגת המובייל המקדימה
+  if(isStandaloneApp()) return;  // כבר מותקן
+  if(isIOS()){
+    const btn=document.getElementById('installBtn');
+    if(btn) btn.style.display='';  // בספארי/iOS אין אירוע אוטומטי – מציגים תמיד
+  }
+});
 
 function startTour(){
   _tourIdx=0;
