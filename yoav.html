@@ -2684,7 +2684,7 @@ function renderMonth(){
     const holBadge=hol?`<div class="holiday-badge" title="${hol}">✡️ <span class="holiday-name">${hol}</span></div>`:'';
     let evHtml=evs.slice(0,3).map(c=>{
       const idx=checks.indexOf(c);
-      return `<div class="month-ev" style="background:${colBg(c.domain)}" onclick="event.stopPropagation();showDpop(event,${idx})"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.7);margin-left:4px;vertical-align:middle"></span>${c.building} · קומה ${c.floor}</div>`;
+      return `<div class="month-ev" style="background:${colBg(c.domain)}" onclick="event.stopPropagation();showDpop(event,${idx})"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.7);margin-left:4px;vertical-align:middle"></span>${c.title||'בדיקה'}</div>`;
     }).join('');
     evHtml+=dists.map(ds=>
       `<div class="month-ev month-dist" onclick="event.stopPropagation();toast('📤 ${ds.name} — ${ds.building} קומה ${ds.floor}','ok')">📤 ${ds.building} · קומה ${ds.floor}</div>`
@@ -2769,7 +2769,7 @@ function renderG(){
       const idx=checks.indexOf(c);
       return`<div class="wd-ev" style="background:${colBg(c.domain)};--glow:${colPrimary(c.domain)}55" onclick="event.stopPropagation();showDpop(event,${idx})">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
-          <div class="wd-ev-bld">${c.building} | ק׳${c.floor}</div>
+          <div class="wd-ev-bld">${c.title||'בדיקה'}</div>
           <span title="${c.status||'טרם התחיל'}" style="width:9px;height:9px;border-radius:50%;background:#fff;flex-shrink:0;opacity:.9;box-shadow:0 0 4px rgba(0,0,0,.3),inset 0 0 0 2.5px ${statusColor(c.status)};display:block"></span>
         </div>
       </div>`;
