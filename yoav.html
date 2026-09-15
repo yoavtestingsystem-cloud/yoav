@@ -17,6 +17,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="יואב">
 <meta name="theme-color" content="#0f1b47">
+<link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjogIteZ15XXkNeRIOKAkyDXoNeZ15TXldecINeR15PXmden15XXqiIsICJzaG9ydF9uYW1lIjogIteZ15XXkNeRIiwgInN0YXJ0X3VybCI6ICIuIiwgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMwZjFiNDciLCAidGhlbWVfY29sb3IiOiAiIzBmMWI0NyIsICJvcmllbnRhdGlvbiI6ICJwb3J0cmFpdC1wcmltYXJ5IiwgImljb25zIjogW3sic3JjIjogImxvZ295b2F2LnBuZyIsICJzaXplcyI6ICIxOTJ4MTkyIiwgInR5cGUiOiAiaW1hZ2UvcG5nIn0sIHsic3JjIjogImxvZ295b2F2LnBuZyIsICJzaXplcyI6ICI1MTJ4NTEyIiwgInR5cGUiOiAiaW1hZ2UvcG5nIn1dfQ==">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -1239,6 +1240,39 @@ body.admin-named .named-admin-only{display:inline-flex}
   padding:13px 20px;font-size:13px;font-weight:800;font-family:'Heebo',sans-serif;cursor:pointer;
 }
 
+/* ===== תכנון שלב ב' – טאב רשימה יפה (בסגנון גיליון) ===== */
+.planb-loading{padding:4rem 0;text-align:center;margin:auto;width:100%}
+
+.pb-table-wrap{overflow:auto;border:1px solid var(--border);border-radius:10px;flex:1;width:100%}
+.pb-table{border-collapse:collapse;width:100%;min-width:1000px;font-size:12.5px}
+.pb-table thead th{
+  position:sticky;top:0;z-index:2;background:var(--navy);color:#fff;
+  font-size:11px;font-weight:800;padding:10px 12px;text-align:right;white-space:nowrap;
+  border-left:1px solid rgba(255,255,255,.12);
+}
+.pb-table thead th:first-child{border-left:none}
+.pb-table tbody td{
+  padding:9px 12px;border-left:1px solid var(--border);border-bottom:1px solid var(--border);
+  white-space:nowrap;color:var(--text);
+}
+.pb-table tbody td:first-child{border-left:none}
+.pb-table tbody tr:nth-child(even){background:var(--surface2)}
+.pb-table tbody tr:hover{background:#eef4ff;cursor:pointer}
+.pb-table tbody tr{animation:fadeUp .3s cubic-bezier(.22,1,.36,1) backwards}
+.pb-bld-cell{font-weight:800;color:var(--navy)}
+.pb-domain-badge{
+  display:inline-block;color:#fff;font-size:10px;font-weight:800;
+  padding:3px 10px;border-radius:20px;white-space:nowrap;
+}
+.pb-status-pill{
+  display:inline-block;color:#fff;font-size:10px;font-weight:800;
+  padding:3px 10px;border-radius:14px;white-space:nowrap;
+}
+.pb-bool-yes{color:#15803d;font-weight:800}
+.pb-bool-no{color:#dc2626;font-weight:800}
+.pb-link{color:#2563eb;font-weight:700;text-decoration:underline;cursor:pointer}
+.pb-empty-cell{color:var(--muted);font-weight:600}
+
 /* ===== MULTI-SELECT CHIPS (קומות ותחומים) ===== */
 .mchips{display:flex;flex-wrap:wrap;gap:6px;padding:6px 2px;max-height:120px;overflow-y:auto}
 .mchip{
@@ -1644,6 +1678,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
   <div class="hdr-end">
     <div class="status-chip"><div class="sdot" id="sdot"></div><span id="stxt">טוען...</span></div>
     <button class="btn-hdr" id="tourBtn" onclick="startTour()" title="הדרכה על המערכת">❓ הדרכה</button>
+    <button class="btn-hdr" id="installBtn" onclick="handleInstallClick()" title="הוסף למסך הבית כמו אפליקציה" style="display:none">📲 הוסף למסך הבית</button>
     <button class="btn-hdr btn-mob-preview named-admin-only" onclick="toggleMobilePreview()" title="תצוגה מקדימה כמו במובייל">📱 מובייל</button>
     <button class="btn-hdr" onclick="syncData()">↻ רענון</button>
     <button class="btn-hdr named-admin-only" onclick="openImport()" title="ייבוא בדיקות מקובץ אקסל">📥 ייבוא מאקסל</button>
@@ -1662,6 +1697,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
     <div class="tabs">
       <button class="tab on" onclick="switchTab('G',this)">📅 גאנט</button>
       <button class="tab" onclick="switchTab('L',this)">📋 רשימה</button>
+      <button class="tab" onclick="switchTab('P',this)">📐 תכנון שלב ב'</button>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn-period" onclick="showPeriod('day')">📆 היום</button>
@@ -1756,6 +1792,24 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
         </tr></thead>
         <tbody id="lbody"></tbody>
       </table>
+    </div>
+  </div>
+
+  <div class="tc" id="tcP">
+    <div class="lcard">
+      <div class="ltoolbar">
+        <div class="lsearch-wrap">
+          <span class="lsearch-ic">🔍</span>
+          <input type="text" id="planBSearch" placeholder="חיפוש לפי מבנה, תחום, צוות..." oninput="renderPlanBList()"/>
+        </div>
+        <div class="lcount" id="planBSub"></div>
+        <button class="lexport-btn" onclick="openNewPlanBRow()" title="הוספת שורת תכנון חדשה">➕ הוספת שורה</button>
+      </div>
+      <div class="pb-table-wrap" id="planBBody">
+        <div class="planb-loading">
+          <div class="app-loader-spin" style="width:40px;height:40px;border-width:4px;margin:0 auto"></div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -1907,6 +1961,89 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
 </div>
 
 <!-- EDIT MODAL -->
+<div class="moverlay" id="planBDetailOverlay" onclick="if(event.target===this)closePlanBDetail()">
+  <div class="mbox" style="max-width:640px">
+    <div class="mhdr">
+      <h2 id="pbeModalTitle">📐 פרטי תכנון שלב ב'</h2>
+      <button class="mclose" onclick="closePlanBDetail()">✕</button>
+    </div>
+    <div class="frow">
+      <div class="fg"><label>מבנה</label><input type="text" id="pbeBuilding"/></div>
+      <div class="fg"><label>קומה</label><input type="text" id="pbeFloor"/></div>
+    </div>
+    <div class="frow">
+      <div class="fg"><label>תחום הבדיקה</label>
+        <select id="pbeDomain">
+          <option>אפיון</option><option>תפעול</option><option>הנדסי</option>
+          <option>הבטחת איכות</option><option>כללי</option>
+        </select>
+      </div>
+      <div class="fg"><label>סבב</label>
+        <select id="pbeRound"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select>
+      </div>
+    </div>
+    <div class="fg"><label>סוג הבדיקה</label><input type="text" id="pbeSubtype"/></div>
+    <div class="fg"><label>צוות מבצע</label><input type="text" id="pbeTeam" placeholder="שם/שמות, אפשר עם + בין כמה אנשים"/></div>
+    <div class="frow">
+      <div class="fg"><label>תאריך ביצוע</label><input type="date" id="pbeExecDate"/></div>
+      <div class="fg"><label>סטטוס ביצוע</label>
+        <select id="pbeStatus">
+          <option value="">—</option>
+          <option>טרם התחיל</option><option>בביצוע</option><option>בוצע</option>
+          <option>בוטל</option><option>נדחה</option>
+        </select>
+      </div>
+    </div>
+    <div class="frow">
+      <div class="fg"><label>תאריך הפצת דו"ח למנהל</label><input type="date" id="pbeDistDate"/></div>
+      <div class="fg"><label>הופץ לזכיין</label>
+        <select id="pbeDistributed"><option value="">—</option><option value="כן">כן</option><option value="לא">לא</option></select>
+      </div>
+    </div>
+    <div class="fg"><label>צרופת דו"ח ליקויים (קישור או טקסט)</label><input type="text" id="pbeReportLink"/></div>
+
+    <div class="mfooter" style="flex-direction:column;gap:10px;margin-top:8px">
+      <button class="btn-save" id="pbeSaveBtn" onclick="savePlanBEdit()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px">
+        <div class="btn-spinner" style="border-top-color:#fff"></div>
+        <span id="pbeSaveBtnTxt">💾 שמור עדכונים</span>
+      </button>
+      <button class="btn-save" id="pbeTransferBtn" onclick="transferPlanBToGantt()" style="width:100%;background:linear-gradient(135deg,#0f5132,#15803d);display:flex;align-items:center;justify-content:center;gap:8px">
+        <div class="btn-spinner" style="border-top-color:#fff"></div>
+        <span id="pbeTransferBtnTxt">📅 העבר לגאנט</span>
+      </button>
+      <button class="btn-save" id="pbeDeleteBtn" onclick="deletePlanBEdit()" style="width:100%;background:linear-gradient(135deg,#b91c1c,#7f1d1d);display:flex;align-items:center;justify-content:center;gap:8px">
+        <div class="btn-spinner" style="border-top-color:#fff"></div>
+        <span id="pbeDeleteBtnTxt">🗑️ מחק שורה</span>
+      </button>
+    </div>
+  </div>
+</div>
+<div class="moverlay" id="a2hsOverlay" onclick="if(event.target===this)closeA2HS()">
+  <div class="mbox" style="max-width:400px;text-align:center">
+    <div class="mhdr">
+      <h2>📲 הוספה למסך הבית</h2>
+      <button class="mclose" onclick="closeA2HS()">✕</button>
+    </div>
+    <p style="font-size:12.5px;color:var(--muted);margin:-4px 0 16px">
+      ככה יואב יופיע כמו אפליקציה, עם אייקון משלו וללא סרגל הכתובת:
+    </p>
+    <div style="display:flex;flex-direction:column;gap:12px;text-align:right">
+      <div style="display:flex;align-items:center;gap:12px;background:var(--surface2);border-radius:12px;padding:12px">
+        <span style="font-size:22px;flex-shrink:0">📤</span>
+        <div style="font-size:13px"><b>שלב 1:</b> הקש על כפתור השיתוף בסרגל התחתון של ספארי (הריבוע עם החץ כלפי מעלה)</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;background:var(--surface2);border-radius:12px;padding:12px">
+        <span style="font-size:22px;flex-shrink:0">➕</span>
+        <div style="font-size:13px"><b>שלב 2:</b> גלול ברשימה ובחר <b>"הוסף למסך הבית"</b> (Add to Home Screen)</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;background:var(--surface2);border-radius:12px;padding:12px">
+        <span style="font-size:22px;flex-shrink:0">✅</span>
+        <div style="font-size:13px"><b>שלב 3:</b> הקש <b>"הוסף"</b> למעלה — האייקון של יואב יופיע במסך הבית</div>
+      </div>
+    </div>
+    <button class="btn-save" onclick="closeA2HS()" style="width:100%;margin-top:18px">הבנתי, תודה!</button>
+  </div>
+</div>
 <div class="moverlay" id="distOverlay" onclick="if(event.target===this)closeDistModal()">
   <div class="mbox" style="max-width:420px">
     <div class="mhdr">
@@ -2083,7 +2220,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
 
 <script>
 // ============================================================
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyRRlf-cOpasB0bg00UbiC3lGwqogqU_hcC_fPWxnv9gWXrjye4LuvyYGdllaflej_6rQ/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzyS_gRxsEF7cOVx7ejG26izjIJo9n9Et-yJmQLaC9NEWmAUubjH_Gqmsj7ze2swt0aVw/exec';
 // ============================================================
 
 
@@ -2684,7 +2821,7 @@ function renderMonth(){
     const holBadge=hol?`<div class="holiday-badge" title="${hol}">✡️ <span class="holiday-name">${hol}</span></div>`:'';
     let evHtml=evs.slice(0,3).map(c=>{
       const idx=checks.indexOf(c);
-      return `<div class="month-ev" style="background:${colBg(c.domain)}" onclick="event.stopPropagation();showDpop(event,${idx})"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.7);margin-left:4px;vertical-align:middle"></span>${c.building} · קומה ${c.floor}</div>`;
+      return `<div class="month-ev" style="background:${colBg(c.domain)}" onclick="event.stopPropagation();showDpop(event,${idx})"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.7);margin-left:4px;vertical-align:middle"></span>${c.title||'בדיקה'}</div>`;
     }).join('');
     evHtml+=dists.map(ds=>
       `<div class="month-ev month-dist" onclick="event.stopPropagation();toast('📤 ${ds.name} — ${ds.building} קומה ${ds.floor}','ok')">📤 ${ds.building} · קומה ${ds.floor}</div>`
@@ -2769,7 +2906,7 @@ function renderG(){
       const idx=checks.indexOf(c);
       return`<div class="wd-ev" style="background:${colBg(c.domain)};--glow:${colPrimary(c.domain)}55" onclick="event.stopPropagation();showDpop(event,${idx})">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
-          <div class="wd-ev-bld">${c.building} | ק׳${c.floor}</div>
+          <div class="wd-ev-bld">${c.title||'בדיקה'}</div>
           <span title="${c.status||'טרם התחיל'}" style="width:9px;height:9px;border-radius:50%;background:#fff;flex-shrink:0;opacity:.9;box-shadow:0 0 4px rgba(0,0,0,.3),inset 0 0 0 2.5px ${statusColor(c.status)};display:block"></span>
         </div>
       </div>`;
@@ -3116,6 +3253,352 @@ async function updateSchedule(){
     txt.textContent='🔄 עדכון לו"ז';
     hideAppLoader();
   }
+}
+
+// ===== תכנון שלב ב' – פאנל רשימה =====
+let planBData=[], planBLoaded=false;
+const PLANB_DC={
+  'אפיון':'#7c3aed', 'תפעול':'#f97316', 'הנדסי':'#0891b2',
+  'הבטחת איכות':'#db2777', 'כללי':'#64748b'
+};
+function planBDomainColor(name){
+  return PLANB_DC[String(name||'').trim()]||'#64748b';
+}
+function planBBoolBadge(v){
+  const s=String(v||'').trim();
+  if(!s) return '<span style="color:var(--muted);font-weight:600">—</span>';
+  const yes=/^(כן|yes|true|v|✓)/i.test(s);
+  return `<span class="${yes?'pb-bool-yes':'pb-bool-no'}">${yes?'✅ כן':'❌ לא'}</span>`;
+}
+
+// ===== המרות תאריך: "dd/mm/yy" (כפי שנשמר בגיליון) ↔ "yyyy-mm-dd" (input type=date) =====
+function pbDateToISO(s){
+  if(!s) return '';
+  const parts=String(s).trim().split('/');
+  if(parts.length!==3) return '';
+  let [d,m,y]=parts;
+  if(y.length===2) y='20'+y;
+  if(!d||!m||!y) return '';
+  return y+'-'+m.padStart(2,'0')+'-'+d.padStart(2,'0');
+}
+function isoToPbDate(iso){
+  if(!iso) return '';
+  const parts=iso.split('-');
+  if(parts.length!==3) return '';
+  return parts[2]+'/'+parts[1]+'/'+parts[0].slice(-2);
+}
+// ממלא <select> עם ערך, ומוסיף אותו כאופציה זמנית אם הוא לא ברשימה הקיימת (כדי לא לאבד נתונים ישנים/מותאמים)
+function pbSelSetWithCustom(selId,value){
+  const sel=document.getElementById(selId);
+  if(value&&![...sel.options].some(o=>o.value===value)){
+    const opt=document.createElement('option');
+    opt.value=value;opt.textContent=value;
+    sel.appendChild(opt);
+  }
+  sel.value=value||'';
+}
+
+// ===== פופ-אפ פרטים/עריכה לשורת תכנון =====
+let _pbeIdx=-1, _pbeIsNew=false;
+function showPlanBDetail(idx){
+  const x=planBData[idx];
+  if(!x) return;
+  _pbeIdx=idx;
+  _pbeIsNew=false;
+  document.getElementById('pbeModalTitle').textContent="📐 פרטי תכנון שלב ב'";
+  document.getElementById('pbeTransferBtn').style.display='';
+  document.getElementById('pbeDeleteBtn').style.display='';
+  document.getElementById('pbeBuilding').value=x.building||'';
+  document.getElementById('pbeFloor').value=x.floor||'';
+  pbSelSetWithCustom('pbeDomain',x.domain);
+  pbSelSetWithCustom('pbeRound',x.round);
+  document.getElementById('pbeSubtype').value=x.subtype||'';
+  document.getElementById('pbeTeam').value=x.team||'';
+  document.getElementById('pbeExecDate').value=pbDateToISO(x.execDate);
+  pbSelSetWithCustom('pbeStatus',x.execStatus);
+  document.getElementById('pbeDistDate').value=pbDateToISO(x.distDate);
+  pbSelSetWithCustom('pbeDistributed',x.distributed);
+  document.getElementById('pbeReportLink').value=x.reportLink||'';
+  document.getElementById('planBDetailOverlay').classList.add('on');
+  document.body.style.overflow='hidden';
+}
+
+// פתיחת טופס ריק להוספת שורת תכנון חדשה (באותם השדות שכבר קיימים בגיליון)
+function openNewPlanBRow(){
+  _pbeIdx=-1;
+  _pbeIsNew=true;
+  document.getElementById('pbeModalTitle').textContent="➕ שורת תכנון חדשה";
+  document.getElementById('pbeTransferBtn').style.display='none';
+  document.getElementById('pbeDeleteBtn').style.display='none';
+  document.getElementById('pbeBuilding').value='';
+  document.getElementById('pbeFloor').value='';
+  document.getElementById('pbeDomain').value='';
+  document.getElementById('pbeRound').value='1';
+  document.getElementById('pbeSubtype').value='';
+  document.getElementById('pbeTeam').value='';
+  document.getElementById('pbeExecDate').value='';
+  document.getElementById('pbeStatus').value='';
+  document.getElementById('pbeDistDate').value='';
+  document.getElementById('pbeDistributed').value='';
+  document.getElementById('pbeReportLink').value='';
+  document.getElementById('planBDetailOverlay').classList.add('on');
+  document.body.style.overflow='hidden';
+  document.getElementById('pbeBuilding').focus();
+}
+
+function closePlanBDetail(){
+  document.getElementById('planBDetailOverlay').classList.remove('on');
+  document.body.style.overflow='';
+  _pbeIdx=-1;
+  _pbeIsNew=false;
+}
+
+function pbReadForm(){
+  return {
+    building:document.getElementById('pbeBuilding').value.trim(),
+    floor:document.getElementById('pbeFloor').value.trim(),
+    domain:document.getElementById('pbeDomain').value,
+    subtype:document.getElementById('pbeSubtype').value.trim(),
+    round:document.getElementById('pbeRound').value,
+    team:document.getElementById('pbeTeam').value.trim(),
+    execDate:isoToPbDate(document.getElementById('pbeExecDate').value),
+    execStatus:document.getElementById('pbeStatus').value,
+    distDate:isoToPbDate(document.getElementById('pbeDistDate').value),
+    reportLink:document.getElementById('pbeReportLink').value.trim(),
+    distributed:document.getElementById('pbeDistributed').value,
+  };
+}
+
+async function savePlanBEdit(){
+  if(_pbeIdx<0&&!_pbeIsNew) return;
+  const form=pbReadForm();
+  if(_pbeIsNew&&!form.building){
+    toast('יש להזין מבנה לפחות','warn');
+    document.getElementById('pbeBuilding').focus();
+    return;
+  }
+  const action=_pbeIsNew?'addPlanBRow':'updatePlanB';
+  const payload=_pbeIsNew
+    ? Object.assign({user:currentUser},form)
+    : Object.assign({rowIndex:planBData[_pbeIdx].rowIndex,user:currentUser},form);
+
+  const btn=document.getElementById('pbeSaveBtn');
+  const txt=document.getElementById('pbeSaveBtnTxt');
+  try{
+    btn.classList.add('btn-spinning');
+    txt.textContent='שומר...';
+    showAppLoader(_pbeIsNew?'מוסיף שורת תכנון חדשה...':'שומר עדכונים לתכנון שלב ב\'...');
+    ss('loading','שומר...');
+    const r=await fetch(SCRIPT_URL+'?action='+action+'&data='+encodeURIComponent(JSON.stringify(payload)));
+    const j=await r.json();
+    if(j.ok){
+      toast(_pbeIsNew?'✅ השורה נוספה לתכנון שלב ב\'':'✅ הפרטים עודכנו','ok');
+      closePlanBDetail();
+      showAppLoader('מסנכרן נתונים...');
+      await fetchPlanB();
+    } else {
+      toast('שגיאה: '+(j.error||'לא ידוע'),'err');
+    }
+    ss('ok','מחובר');
+  }catch(e){
+    console.error('שגיאת עדכון תכנון שלב ב:',e);
+    ss('err','שגיאה');toast('שגיאת רשת - העדכון לא נשמר','err');
+  }finally{
+    btn.classList.remove('btn-spinning');
+    txt.textContent='💾 שמור עדכונים';
+    hideAppLoader();
+  }
+}
+
+async function deletePlanBEdit(){
+  if(_pbeIdx<0) return;
+  const x=planBData[_pbeIdx];
+  if(!confirm(`למחוק את שורת התכנון של מבנה ${x.building||'—'} קומה ${x.floor||'—'}?`)) return;
+
+  const btn=document.getElementById('pbeDeleteBtn');
+  const txt=document.getElementById('pbeDeleteBtnTxt');
+  try{
+    btn.classList.add('btn-spinning');
+    txt.textContent='מוחק...';
+    showAppLoader('מוחק שורת תכנון...');
+    ss('loading','מוחק...');
+    const r=await fetch(SCRIPT_URL+'?action=deletePlanBRow&data='+encodeURIComponent(JSON.stringify({rowIndex:x.rowIndex,user:currentUser})));
+    const j=await r.json();
+    if(j.ok){
+      toast('🗑️ השורה נמחקה','warn');
+      closePlanBDetail();
+      showAppLoader('מסנכרן נתונים...');
+      await fetchPlanB();
+    } else {
+      toast('שגיאה: '+(j.error||'לא ידוע'),'err');
+    }
+    ss('ok','מחובר');
+  }catch(e){
+    console.error('שגיאת מחיקת תכנון שלב ב:',e);
+    ss('err','שגיאה');toast('שגיאת רשת - המחיקה נכשלה','err');
+  }finally{
+    btn.classList.remove('btn-spinning');
+    txt.textContent='🗑️ מחק שורה';
+    hideAppLoader();
+  }
+}
+
+// העברת שורת תכנון לגאנט – יוצרת בדיקה אמיתית בגיליון "בדיקות" (עם זימון ליומן),
+// ומוחקת את השורה המקורית מ"תכנון שלב ב'" כדי שלא תופיע בשני המקומות.
+async function transferPlanBToGantt(){
+  if(_pbeIdx<0) return;
+  const x=planBData[_pbeIdx];
+  const form=pbReadForm();
+  const execISO=document.getElementById('pbeExecDate').value;
+  if(!execISO){toast('יש להזין תאריך ביצוע לפני ההעברה לגאנט','warn');document.getElementById('pbeExecDate').focus();return;}
+  if(!form.building){toast('יש להזין מבנה לפני ההעברה לגאנט','warn');document.getElementById('pbeBuilding').focus();return;}
+  if(!confirm('הפעולה תיצור בדיקה חדשה בגאנט (עם זימון ליומן) ותסיר את השורה מתכנון שלב ב\'. להמשיך?')) return;
+
+  // ניסיון לשייך את השמות שברשימת "צוות מבצע" לאנשי צוות קיימים במערכת (לצורך זימון)
+  const rawNames=form.team.split(/[+,&]/).map(s=>s.trim()).filter(Boolean);
+  const matched=[];
+  rawNames.forEach(nm=>{
+    const p=staff.find(s=>s.name===nm)||staff.find(s=>s.name.includes(nm)||nm.includes(s.name));
+    if(p&&!matched.find(m=>m.name===p.name)) matched.push(p);
+  });
+
+  const btn=document.getElementById('pbeTransferBtn');
+  const txt=document.getElementById('pbeTransferBtnTxt');
+  try{
+    btn.classList.add('btn-spinning');
+    txt.textContent='מעביר לגאנט...';
+    showAppLoader('יוצר בדיקה בגאנט ושולח זימונים...');
+    ss('loading','מעביר...');
+
+    const addPayload=JSON.stringify({
+      date:execISO,
+      building:form.building, floor:form.floor||'1',
+      domain:form.domain||'כללי', subtype:form.subtype||'',
+      round:form.round||'', title:'', hours:'',
+      name:matched.map(p=>p.name).join(', '),
+      email:matched.map(p=>p.email).join(', '),
+      status:form.execStatus||'טרם התחיל',
+      user:currentUser
+    });
+    const r1=await fetch(SCRIPT_URL+'?action=addRow&data='+encodeURIComponent(addPayload));
+    const j1=await r1.json();
+    if(!j1.ok){ toast('שגיאה ביצירת הבדיקה בגאנט: '+(j1.error||'לא ידוע'),'err'); return; }
+
+    showAppLoader('מסיר את השורה מתכנון שלב ב\'...');
+    await fetch(SCRIPT_URL+'?action=deletePlanBRow&data='+encodeURIComponent(JSON.stringify({rowIndex:x.rowIndex,user:currentUser})));
+
+    const missing=rawNames.length-matched.length;
+    toast(missing
+      ? `✅ הבדיקה הועברה לגאנט · ⚠️ ${missing} מהצוות לא נמצאו במערכת ולא קיבלו זימון`
+      : '✅ הבדיקה הועברה לגאנט וזימון נשלח לצוות','ok');
+    closePlanBDetail();
+    showAppLoader('מסנכרן נתונים...');
+    await sync();
+    await fetchPlanB();
+    ss('ok','מחובר');
+  }catch(e){
+    console.error('שגיאת העברה לגאנט:',e);
+    ss('err','שגיאה');toast('שגיאת רשת - ההעברה נכשלה','err');
+  }finally{
+    btn.classList.remove('btn-spinning');
+    txt.textContent='📅 העבר לגאנט';
+    hideAppLoader();
+  }
+}
+
+async function openPlanB(){
+  if(!planBLoaded){
+    await fetchPlanB();
+  } else {
+    renderPlanBList();
+    fetchPlanB();  // רענון שקט ברקע
+  }
+}
+
+async function fetchPlanB(){
+  const sub=document.getElementById('planBSub');
+  const body=document.getElementById('planBBody');
+  if(!planBLoaded){
+    body.innerHTML='<div class="planb-loading"><div class="app-loader-spin" style="width:40px;height:40px;border-width:4px;margin:0 auto"></div></div>';
+  }
+  try{
+    const r=await fetch(SCRIPT_URL+'?action=getPlanB');
+    const j=await r.json();
+    planBData=(j.rows||[]).map((r,i)=>({
+      rowIndex:i+2,  // שורה 1 = כותרות, נתונים מתחילים בשורה 2
+      building:(r[0]||'').toString().trim(),
+      floor:(r[1]||'').toString().trim(),
+      domain:(r[2]||'').toString().trim(),
+      subtype:(r[3]||'').toString().trim(),
+      round:(r[4]||'').toString().trim(),
+      team:(r[5]||'').toString().trim(),
+      execDate:(r[6]||'').toString().trim(),
+      execStatus:(r[7]||'').toString().trim(),
+      distDate:(r[8]||'').toString().trim(),
+      reportLink:(r[9]||'').toString().trim(),
+      distributed:(r[10]||'').toString().trim(),
+    })).filter(x=>x.building||x.domain||x.subtype);
+    planBLoaded=true;
+    renderPlanBList();
+  }catch(e){
+    console.error('שגיאת טעינת תכנון שלב ב:',e);
+    if(!planBLoaded){
+      body.innerHTML='<div class="planb-loading" style="color:var(--muted)">⚠️ שגיאה בטעינת הנתונים. נסה שוב.</div>';
+      sub.textContent='שגיאת חיבור';
+    }
+  }
+}
+
+function renderPlanBList(){
+  const q=(document.getElementById('planBSearch')?.value||'').trim().toLowerCase();
+  const body=document.getElementById('planBBody');
+  const sub=document.getElementById('planBSub');
+
+  let list=planBData;
+  if(q){
+    list=list.filter(x=>[x.building,x.floor,x.domain,x.subtype,x.team,x.execStatus]
+      .join(' ').toLowerCase().includes(q));
+  }
+  sub.textContent=`${list.length} רשומות מתוך ${planBData.length}`;
+
+  if(!list.length){
+    body.innerHTML='<div class="planb-loading" style="color:var(--muted)">🔍 לא נמצאו רשומות תואמות</div>';
+    return;
+  }
+
+  const ec=v=>v?`<span>${v}</span>`:'<span class="pb-empty-cell">—</span>';
+
+  const rowsHtml=list.map((x,i)=>{
+    const realIdx=planBData.indexOf(x);
+    const statusColorVal=x.execStatus?statusColor(x.execStatus):null;
+    const reportHtml=x.reportLink
+      ? (/^https?:\/\//.test(x.reportLink)
+          ? `<a class="pb-link" href="${x.reportLink}" target="_blank" rel="noopener" onclick="event.stopPropagation()">📎 דו"ח</a>`
+          : ec(x.reportLink))
+      : ec();
+    return `<tr class="pb-row" style="animation-delay:${Math.min(i*.02,.35)}s" onclick="showPlanBDetail(${realIdx})" title="לחץ לצפייה ועריכה">
+      <td class="pb-bld-cell">${x.building||'—'}</td>
+      <td>${x.floor||'—'}</td>
+      <td>${x.domain?`<span class="pb-domain-badge" style="background:${planBDomainColor(x.domain)}">${x.domain}</span>`:'<span class="pb-empty-cell">—</span>'}</td>
+      <td>${ec(x.subtype)}</td>
+      <td>${ec(x.round)}</td>
+      <td>${ec(x.team)}</td>
+      <td>${ec(x.execDate)}</td>
+      <td>${x.execStatus?`<span class="pb-status-pill" style="background:${statusColorVal}">${x.execStatus}</span>`:'<span class="pb-empty-cell">—</span>'}</td>
+      <td>${ec(x.distDate)}</td>
+      <td>${reportHtml}</td>
+      <td>${planBBoolBadge(x.distributed)}</td>
+    </tr>`;
+  }).join('');
+
+  body.innerHTML=`<table class="pb-table">
+    <thead><tr>
+      <th>מבנה</th><th>קומה</th><th>תחום הבדיקה</th><th>סוג הבדיקה</th><th>סבב</th>
+      <th>צוות מבצע</th><th>תאריך ביצוע</th><th>סטטוס ביצוע</th>
+      <th>תאריך הפצת דו"ח למנהל</th><th>צרופת דו"ח ליקויים</th><th>האם הופץ לזכיין</th>
+    </tr></thead>
+    <tbody>${rowsHtml}</tbody>
+  </table>`;
 }
 
 function openImport(){
@@ -4232,6 +4715,7 @@ function switchTab(id,el){
   el.classList.add('on');
   document.getElementById('tc'+id).classList.add('on');
   if(id==='L') renderL();
+  if(id==='P') openPlanB();
 }
 
 // ── AUTO LOGOUT אחרי חצי שעה חוסר פעילות ──
@@ -4305,6 +4789,49 @@ const TOUR_STEPS=[
   {sel:'#tourBtn', title:'❓ צריך תזכורת?', txt:'ההדרכה הזו זמינה תמיד בכפתור הזה. בהצלחה! 🎉'}
 ];
 let _tourIdx=0;
+
+// ===== התקנה למסך הבית (PWA) =====
+let deferredInstallPrompt=null;
+
+function isIOS(){return /iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;}
+function isStandaloneApp(){return window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;}
+
+window.addEventListener('beforeinstallprompt',(e)=>{
+  if(window.self!==window.top) return;
+  e.preventDefault();
+  deferredInstallPrompt=e;
+  const btn=document.getElementById('installBtn');
+  if(btn&&!isStandaloneApp()) btn.style.display='';
+});
+window.addEventListener('appinstalled',()=>{
+  deferredInstallPrompt=null;
+  const btn=document.getElementById('installBtn');
+  if(btn) btn.style.display='none';
+  toast('📲 יואב הותקן בהצלחה!','ok');
+});
+
+async function handleInstallClick(){
+  if(deferredInstallPrompt){
+    deferredInstallPrompt.prompt();
+    try{ await deferredInstallPrompt.userChoice; }catch(e){}
+    deferredInstallPrompt=null;
+  } else if(isIOS()){
+    showA2HSInstructions();
+  } else {
+    toast('בדפדפן הזה אין תמיכה בהתקנה אוטומטית — נסה מספארי או כרום במובייל','warn');
+  }
+}
+function showA2HSInstructions(){document.getElementById('a2hsOverlay').classList.add('on');}
+function closeA2HS(){document.getElementById('a2hsOverlay').classList.remove('on');}
+
+window.addEventListener('load',()=>{
+  if(window.self!==window.top) return;  // לא בתוך תצוגת המובייל המקדימה
+  if(isStandaloneApp()) return;  // כבר מותקן
+  if(isIOS()){
+    const btn=document.getElementById('installBtn');
+    if(btn) btn.style.display='';  // בספארי/iOS אין אירוע אוטומטי – מציגים תמיד
+  }
+});
 
 function startTour(){
   _tourIdx=0;
