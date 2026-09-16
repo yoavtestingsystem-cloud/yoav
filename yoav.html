@@ -3361,7 +3361,7 @@ function showPlanBDetail(setKey,idx){
   document.getElementById('pbeReportLink').value=x.reportLink||'';
   const pbeFileInput=document.getElementById('pbeReportFile');
   if(pbeFileInput) pbeFileInput.value='';
-  document.getElementById('pbeReportUploadTxt').textContent='העלאת קובץ (אקסל / וורד / PDF)';
+  document.getElementById('pbeReportUploadTxt').textContent='העלאת קובץ (Excel/ Word/ PDF)';
   pbUpdateReportPreviewBtn();
   document.getElementById('planBDetailOverlay').classList.add('on');
   document.body.style.overflow='hidden';
@@ -3390,7 +3390,7 @@ function openNewPlanBRow(setKey){
   document.getElementById('pbeReportLink').value='';
   const pbeFileInputNew=document.getElementById('pbeReportFile');
   if(pbeFileInputNew) pbeFileInputNew.value='';
-  document.getElementById('pbeReportUploadTxt').textContent='העלאת קובץ (אקסל / וורד / PDF)';
+  document.getElementById('pbeReportUploadTxt').textContent='העלאת קובץ (Excel/ Word/ PDF)';
   pbUpdateReportPreviewBtn();
   document.getElementById('planBDetailOverlay').classList.add('on');
   document.body.style.overflow='hidden';
@@ -3413,11 +3413,11 @@ function pbUpdateReportPreviewBtn(){
 function pbReportFileChosen(inputEl){
   const file=inputEl.files[0];
   const txt=document.getElementById('pbeReportUploadTxt');
-  if(!file){ txt.textContent='העלאת קובץ (אקסל / וורד / PDF)'; return; }
+  if(!file){ txt.textContent='העלאת קובץ (Excel/ Word/ PDF)'; return; }
   if(file.size>10*1024*1024){
     toast('הקובץ גדול מדי (מקסימום 10MB)','err');
     inputEl.value='';
-    txt.textContent='העלאת קובץ (אקסל / וורד / PDF)';
+    txt.textContent='העלאת קובץ (Excel/ Word/ PDF)';
     return;
   }
   txt.textContent='נבחר: '+file.name;
