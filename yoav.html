@@ -1258,8 +1258,11 @@ body.admin-named .named-admin-only{display:inline-flex}
 .pb-table tbody td:first-child{border-left:none}
 .pb-table tbody tr:nth-child(even){background:var(--surface2)}
 .pb-table tbody tr:hover{background:#eef4ff;cursor:pointer}
+.pb-table tbody tr.pb-row-survey{background:#fef3c7!important}
+.pb-table tbody tr.pb-row-survey:hover{background:#fde68a!important}
 .pb-table tbody tr{animation:fadeUp .3s cubic-bezier(.22,1,.36,1) backwards}
 .pb-bld-cell{font-weight:800;color:var(--navy)}
+.pb-seq-cell{font-weight:700;color:var(--muted);text-align:center;width:1%}
 .pb-domain-badge{
   display:inline-block;color:#fff;font-size:10px;font-weight:800;
   padding:3px 10px;border-radius:20px;white-space:nowrap;
@@ -1698,6 +1701,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
       <button class="tab on" onclick="switchTab('G',this)">📅 גאנט</button>
       <button class="tab" onclick="switchTab('L',this)">📋 רשימה</button>
       <button class="tab" onclick="switchTab('P',this)">📐 תכנון שלב ב'</button>
+      <button class="tab" onclick="switchTab('Q',this)">🔧 תכנון שלב ב' תקשוב</button>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn-period" onclick="showPeriod('day')">📆 היום</button>
@@ -1800,12 +1804,30 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
       <div class="ltoolbar">
         <div class="lsearch-wrap">
           <span class="lsearch-ic">🔍</span>
-          <input type="text" id="planBSearch" placeholder="חיפוש לפי מבנה, תחום, צוות..." oninput="renderPlanBList()"/>
+          <input type="text" id="planBSearch" placeholder="חיפוש לפי מבנה, תחום, צוות..." oninput="renderPlanBList('B')"/>
         </div>
         <div class="lcount" id="planBSub"></div>
-        <button class="lexport-btn" onclick="openNewPlanBRow()" title="הוספת שורת תכנון חדשה">➕ הוספת שורה</button>
+        <button class="lexport-btn" onclick="openNewPlanBRow('B')" title="הוספת שורת תכנון חדשה">➕ הוספת שורה</button>
       </div>
       <div class="pb-table-wrap" id="planBBody">
+        <div class="planb-loading">
+          <div class="app-loader-spin" style="width:40px;height:40px;border-width:4px;margin:0 auto"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tc" id="tcQ">
+    <div class="lcard">
+      <div class="ltoolbar">
+        <div class="lsearch-wrap">
+          <span class="lsearch-ic">🔍</span>
+          <input type="text" id="planBSearch2" placeholder="חיפוש לפי מבנה, תחום, צוות..." oninput="renderPlanBList('T')"/>
+        </div>
+        <div class="lcount" id="planBSub2"></div>
+        <button class="lexport-btn" onclick="openNewPlanBRow('T')" title="הוספת שורת תכנון חדשה">➕ הוספת שורה</button>
+      </div>
+      <div class="pb-table-wrap" id="planBBody2">
         <div class="planb-loading">
           <div class="app-loader-spin" style="width:40px;height:40px;border-width:4px;margin:0 auto"></div>
         </div>
@@ -1967,6 +1989,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
       <h2 id="pbeModalTitle">📐 פרטי תכנון שלב ב'</h2>
       <button class="mclose" onclick="closePlanBDetail()">✕</button>
     </div>
+    <div id="pbeSeqBadge" style="font-size:11.5px;font-weight:700;color:var(--muted);margin:-6px 0 10px"></div>
     <div class="frow">
       <div class="fg"><label>מבנה</label><input type="text" id="pbeBuilding"/></div>
       <div class="fg"><label>קומה</label><input type="text" id="pbeFloor"/></div>
@@ -2000,7 +2023,17 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
         <select id="pbeDistributed"><option value="">—</option><option value="כן">כן</option><option value="לא">לא</option></select>
       </div>
     </div>
-    <div class="fg"><label>צרופת דו"ח ליקויים (קישור או טקסט)</label><input type="text" id="pbeReportLink"/></div>
+    <div class="fg">
+      <label>צרופת דו"ח ליקויים</label>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input type="text" id="pbeReportLink" placeholder="קישור או טקסט חופשי" style="flex:1;min-width:160px" oninput="pbUpdateReportPreviewBtn()"/>
+        <button type="button" class="dur-chip" id="pbeReportPreviewBtn" style="display:none;white-space:nowrap" onclick="showDocPreview(document.getElementById('pbeReportLink').value)">👁️ תצוגה מקדימה</button>
+      </div>
+      <div class="admin-only" style="margin-top:8px">
+        <input type="file" id="pbeReportFile" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg" style="display:none" onchange="pbReportFileChosen(this)"/>
+        <button type="button" class="dur-chip" onclick="document.getElementById('pbeReportFile').click()">📤 <span id="pbeReportUploadTxt">העלאת קובץ (אקסל / וורד / PDF)</span></button>
+      </div>
+    </div>
 
     <div class="mfooter" style="flex-direction:column;gap:10px;margin-top:8px">
       <button class="btn-save" id="pbeSaveBtn" onclick="savePlanBEdit()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px">
@@ -2220,7 +2253,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
 
 <script>
 // ============================================================
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzyS_gRxsEF7cOVx7ejG26izjIJo9n9Et-yJmQLaC9NEWmAUubjH_Gqmsj7ze2swt0aVw/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzfmFkjO61NTePEvrhfjuZBsEZFu1Q-JweobY5ZgVUKADaoweV1j-k_DKDk3N0j51IQ/exec';
 // ============================================================
 
 
@@ -3256,7 +3289,11 @@ async function updateSchedule(){
 }
 
 // ===== תכנון שלב ב' – פאנל רשימה =====
-let planBData=[], planBLoaded=false;
+// ===== תכנון שלב ב' (רגיל + תקשוב) – מצב כללי לכמה גיליונות =====
+let planBSets={
+  B:{data:[], loaded:false, sheetName:'תכנון שלב ב', searchId:'planBSearch', bodyId:'planBBody', subId:'planBSub'},
+  T:{data:[], loaded:false, sheetName:'תכנון שלב ב - תקשוב', searchId:'planBSearch2', bodyId:'planBBody2', subId:'planBSub2'}
+};
 const PLANB_DC={
   'אפיון':'#7c3aed', 'תפעול':'#f97316', 'הנדסי':'#0891b2',
   'הבטחת איכות':'#db2777', 'כללי':'#64748b'
@@ -3298,14 +3335,17 @@ function pbSelSetWithCustom(selId,value){
   sel.value=value||'';
 }
 
-// ===== פופ-אפ פרטים/עריכה לשורת תכנון =====
-let _pbeIdx=-1, _pbeIsNew=false;
-function showPlanBDetail(idx){
-  const x=planBData[idx];
+// ===== פופ-אפ פרטים/עריכה לשורת תכנון (משותף לשני הגיליונות) =====
+let _pbeIdx=-1, _pbeIsNew=false, _pbeSetKey='B';
+function showPlanBDetail(setKey,idx){
+  const set=planBSets[setKey];
+  const x=set.data[idx];
   if(!x) return;
+  _pbeSetKey=setKey;
   _pbeIdx=idx;
   _pbeIsNew=false;
-  document.getElementById('pbeModalTitle').textContent="📐 פרטי תכנון שלב ב'";
+  document.getElementById('pbeModalTitle').textContent="📐 פרטי תכנון שלב ב'"+(setKey==='T'?" – תקשוב":'');
+  document.getElementById('pbeSeqBadge').textContent=x.seq?`מס"ד ${x.seq}`:'';
   document.getElementById('pbeTransferBtn').style.display='';
   document.getElementById('pbeDeleteBtn').style.display='';
   document.getElementById('pbeBuilding').value=x.building||'';
@@ -3319,15 +3359,22 @@ function showPlanBDetail(idx){
   document.getElementById('pbeDistDate').value=pbDateToISO(x.distDate);
   pbSelSetWithCustom('pbeDistributed',x.distributed);
   document.getElementById('pbeReportLink').value=x.reportLink||'';
+  const pbeFileInput=document.getElementById('pbeReportFile');
+  if(pbeFileInput) pbeFileInput.value='';
+  document.getElementById('pbeReportUploadTxt').textContent='העלאת קובץ (אקסל / וורד / PDF)';
+  pbUpdateReportPreviewBtn();
   document.getElementById('planBDetailOverlay').classList.add('on');
   document.body.style.overflow='hidden';
 }
 
 // פתיחת טופס ריק להוספת שורת תכנון חדשה (באותם השדות שכבר קיימים בגיליון)
-function openNewPlanBRow(){
+function openNewPlanBRow(setKey){
+  _pbeSetKey=setKey;
   _pbeIdx=-1;
   _pbeIsNew=true;
-  document.getElementById('pbeModalTitle').textContent="➕ שורת תכנון חדשה";
+  document.getElementById('pbeModalTitle').textContent="➕ שורת תכנון חדשה"+(setKey==='T'?" – תקשוב":'');
+  const nextSeq=Math.max(0,...planBSets[setKey].data.map(x=>Number(x.seq)||0))+1;
+  document.getElementById('pbeSeqBadge').textContent=`מס"ד ${nextSeq} (יוקצה אוטומטית בשמירה)`;
   document.getElementById('pbeTransferBtn').style.display='none';
   document.getElementById('pbeDeleteBtn').style.display='none';
   document.getElementById('pbeBuilding').value='';
@@ -3341,6 +3388,10 @@ function openNewPlanBRow(){
   document.getElementById('pbeDistDate').value='';
   document.getElementById('pbeDistributed').value='';
   document.getElementById('pbeReportLink').value='';
+  const pbeFileInputNew=document.getElementById('pbeReportFile');
+  if(pbeFileInputNew) pbeFileInputNew.value='';
+  document.getElementById('pbeReportUploadTxt').textContent='העלאת קובץ (אקסל / וורד / PDF)';
+  pbUpdateReportPreviewBtn();
   document.getElementById('planBDetailOverlay').classList.add('on');
   document.body.style.overflow='hidden';
   document.getElementById('pbeBuilding').focus();
@@ -3351,6 +3402,51 @@ function closePlanBDetail(){
   document.body.style.overflow='';
   _pbeIdx=-1;
   _pbeIsNew=false;
+}
+
+// ===== צרופת דו"ח ליקויים – תצוגה מקדימה + העלאה (admin בלבד) =====
+function pbUpdateReportPreviewBtn(){
+  const val=document.getElementById('pbeReportLink').value.trim();
+  const btn=document.getElementById('pbeReportPreviewBtn');
+  btn.style.display=/^https?:\/\//.test(val)?'':'none';
+}
+function pbReportFileChosen(inputEl){
+  const file=inputEl.files[0];
+  const txt=document.getElementById('pbeReportUploadTxt');
+  if(!file){ txt.textContent='העלאת קובץ (אקסל / וורד / PDF)'; return; }
+  if(file.size>10*1024*1024){
+    toast('הקובץ גדול מדי (מקסימום 10MB)','err');
+    inputEl.value='';
+    txt.textContent='העלאת קובץ (אקסל / וורד / PDF)';
+    return;
+  }
+  txt.textContent='נבחר: '+file.name;
+}
+// מעלה את הקובץ שנבחר (אם יש) לדרייב ומחזיר את הכתובת שהתקבלה, או null אם אין קובץ/נכשל
+async function pbUploadReportFileIfNeeded_(set,seq,rowIndexFallback){
+  const fileInput=document.getElementById('pbeReportFile');
+  const file=fileInput?.files[0];
+  if(!file) return null;
+  try{
+    const b64=await fileToB64(file);
+    const up=await fetch(SCRIPT_URL,{
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify({action:'uploadPlanBFile',data:JSON.stringify({
+        sheetName:set.sheetName, seq:seq, rowIndex:rowIndexFallback,
+        user:currentUser, fileName:file.name,
+        mimeType:file.type||'application/octet-stream', base64:b64
+      })})
+    });
+    const uj=await up.json();
+    if(uj.ok) return uj.fileUrl;
+    toast('⚠️ הרשומה נשמרה, אך העלאת הקובץ נכשלה: '+(uj.error||'לא ידוע'),'warn');
+    return null;
+  }catch(e){
+    console.error('שגיאת העלאת קובץ לתכנון שלב ב:',e);
+    toast('⚠️ הרשומה נשמרה, אך הייתה שגיאת רשת בהעלאת הקובץ','warn');
+    return null;
+  }
 }
 
 function pbReadForm(){
@@ -3371,6 +3467,7 @@ function pbReadForm(){
 
 async function savePlanBEdit(){
   if(_pbeIdx<0&&!_pbeIsNew) return;
+  const set=planBSets[_pbeSetKey];
   const form=pbReadForm();
   if(_pbeIsNew&&!form.building){
     toast('יש להזין מבנה לפחות','warn');
@@ -3378,9 +3475,10 @@ async function savePlanBEdit(){
     return;
   }
   const action=_pbeIsNew?'addPlanBRow':'updatePlanB';
+  const base={user:currentUser,sheetName:set.sheetName};
   const payload=_pbeIsNew
-    ? Object.assign({user:currentUser},form)
-    : Object.assign({rowIndex:planBData[_pbeIdx].rowIndex,user:currentUser},form);
+    ? Object.assign(base,form)
+    : Object.assign({rowIndex:set.data[_pbeIdx].rowIndex,seq:set.data[_pbeIdx].seq},base,form);
 
   const btn=document.getElementById('pbeSaveBtn');
   const txt=document.getElementById('pbeSaveBtnTxt');
@@ -3392,10 +3490,18 @@ async function savePlanBEdit(){
     const r=await fetch(SCRIPT_URL+'?action='+action+'&data='+encodeURIComponent(JSON.stringify(payload)));
     const j=await r.json();
     if(j.ok){
+      const fileInput=document.getElementById('pbeReportFile');
+      if(fileInput?.files[0]){
+        txt.textContent='מעלה קובץ לדרייב...';
+        showAppLoader('מעלה קובץ לדרייב...');
+        const seqForUpload=_pbeIsNew?j.seq:set.data[_pbeIdx].seq;
+        const rowIdxForUpload=_pbeIsNew?null:set.data[_pbeIdx].rowIndex;
+        await pbUploadReportFileIfNeeded_(set,seqForUpload,rowIdxForUpload);
+      }
       toast(_pbeIsNew?'✅ השורה נוספה לתכנון שלב ב\'':'✅ הפרטים עודכנו','ok');
       closePlanBDetail();
       showAppLoader('מסנכרן נתונים...');
-      await fetchPlanB();
+      await fetchPlanB(_pbeSetKey==='T'?'T':'B');
     } else {
       toast('שגיאה: '+(j.error||'לא ידוע'),'err');
     }
@@ -3412,7 +3518,8 @@ async function savePlanBEdit(){
 
 async function deletePlanBEdit(){
   if(_pbeIdx<0) return;
-  const x=planBData[_pbeIdx];
+  const set=planBSets[_pbeSetKey];
+  const x=set.data[_pbeIdx];
   if(!confirm(`למחוק את שורת התכנון של מבנה ${x.building||'—'} קומה ${x.floor||'—'}?`)) return;
 
   const btn=document.getElementById('pbeDeleteBtn');
@@ -3422,13 +3529,13 @@ async function deletePlanBEdit(){
     txt.textContent='מוחק...';
     showAppLoader('מוחק שורת תכנון...');
     ss('loading','מוחק...');
-    const r=await fetch(SCRIPT_URL+'?action=deletePlanBRow&data='+encodeURIComponent(JSON.stringify({rowIndex:x.rowIndex,user:currentUser})));
+    const r=await fetch(SCRIPT_URL+'?action=deletePlanBRow&data='+encodeURIComponent(JSON.stringify({rowIndex:x.rowIndex,seq:x.seq,user:currentUser,sheetName:set.sheetName})));
     const j=await r.json();
     if(j.ok){
       toast('🗑️ השורה נמחקה','warn');
       closePlanBDetail();
       showAppLoader('מסנכרן נתונים...');
-      await fetchPlanB();
+      await fetchPlanB(_pbeSetKey);
     } else {
       toast('שגיאה: '+(j.error||'לא ידוע'),'err');
     }
@@ -3443,31 +3550,25 @@ async function deletePlanBEdit(){
   }
 }
 
-// העברת שורת תכנון לגאנט – יוצרת בדיקה אמיתית בגיליון "בדיקות" (עם זימון ליומן),
-// ומוחקת את השורה המקורית מ"תכנון שלב ב'" כדי שלא תופיע בשני המקומות.
+// העברת שורת תכנון לגאנט – יוצרת בדיקה אמיתית בגיליון "בדיקות", בלי לשלוח זימון אוטומטית
+// (אם רוצים לשלוח זימון, עורכים את הבדיקה בגאנט ומוסיפים/שולחים משם באופן מכוון),
+// ומוחקת את השורה המקורית מגיליון התכנון כדי שלא תופיע בשני המקומות.
 async function transferPlanBToGantt(){
   if(_pbeIdx<0) return;
-  const x=planBData[_pbeIdx];
+  const set=planBSets[_pbeSetKey];
+  const x=set.data[_pbeIdx];
   const form=pbReadForm();
   const execISO=document.getElementById('pbeExecDate').value;
   if(!execISO){toast('יש להזין תאריך ביצוע לפני ההעברה לגאנט','warn');document.getElementById('pbeExecDate').focus();return;}
   if(!form.building){toast('יש להזין מבנה לפני ההעברה לגאנט','warn');document.getElementById('pbeBuilding').focus();return;}
-  if(!confirm('הפעולה תיצור בדיקה חדשה בגאנט (עם זימון ליומן) ותסיר את השורה מתכנון שלב ב\'. להמשיך?')) return;
-
-  // ניסיון לשייך את השמות שברשימת "צוות מבצע" לאנשי צוות קיימים במערכת (לצורך זימון)
-  const rawNames=form.team.split(/[+,&]/).map(s=>s.trim()).filter(Boolean);
-  const matched=[];
-  rawNames.forEach(nm=>{
-    const p=staff.find(s=>s.name===nm)||staff.find(s=>s.name.includes(nm)||nm.includes(s.name));
-    if(p&&!matched.find(m=>m.name===p.name)) matched.push(p);
-  });
+  if(!confirm('הפעולה תיצור בדיקה חדשה בגאנט (בלי לשלוח זימון אוטומטית) ותסיר את השורה מהתכנון. זימון אפשר לשלוח מתוך הבדיקה בגאנט בכל שלב. להמשיך?')) return;
 
   const btn=document.getElementById('pbeTransferBtn');
   const txt=document.getElementById('pbeTransferBtnTxt');
   try{
     btn.classList.add('btn-spinning');
     txt.textContent='מעביר לגאנט...';
-    showAppLoader('יוצר בדיקה בגאנט ושולח זימונים...');
+    showAppLoader('יוצר בדיקה בגאנט...');
     ss('loading','מעביר...');
 
     const addPayload=JSON.stringify({
@@ -3475,8 +3576,8 @@ async function transferPlanBToGantt(){
       building:form.building, floor:form.floor||'1',
       domain:form.domain||'כללי', subtype:form.subtype||'',
       round:form.round||'', title:'', hours:'',
-      name:matched.map(p=>p.name).join(', '),
-      email:matched.map(p=>p.email).join(', '),
+      name:form.team||'',
+      email:'',  // בכוונה ריק — אין שליחת זימון אוטומטית בהעברה; שולחים ידנית מתוך הגאנט
       status:form.execStatus||'טרם התחיל',
       user:currentUser
     });
@@ -3484,17 +3585,14 @@ async function transferPlanBToGantt(){
     const j1=await r1.json();
     if(!j1.ok){ toast('שגיאה ביצירת הבדיקה בגאנט: '+(j1.error||'לא ידוע'),'err'); return; }
 
-    showAppLoader('מסיר את השורה מתכנון שלב ב\'...');
-    await fetch(SCRIPT_URL+'?action=deletePlanBRow&data='+encodeURIComponent(JSON.stringify({rowIndex:x.rowIndex,user:currentUser})));
+    showAppLoader('מסיר את השורה מהתכנון...');
+    await fetch(SCRIPT_URL+'?action=deletePlanBRow&data='+encodeURIComponent(JSON.stringify({rowIndex:x.rowIndex,seq:x.seq,user:currentUser,sheetName:set.sheetName})));
 
-    const missing=rawNames.length-matched.length;
-    toast(missing
-      ? `✅ הבדיקה הועברה לגאנט · ⚠️ ${missing} מהצוות לא נמצאו במערכת ולא קיבלו זימון`
-      : '✅ הבדיקה הועברה לגאנט וזימון נשלח לצוות','ok');
+    toast('✅ הבדיקה הועברה לגאנט (ללא זימון) · אפשר לשלוח זימון מתוך הבדיקה בגאנט','ok');
     closePlanBDetail();
     showAppLoader('מסנכרן נתונים...');
     await sync();
-    await fetchPlanB();
+    await fetchPlanB(_pbeSetKey);
     ss('ok','מחובר');
   }catch(e){
     console.error('שגיאת העברה לגאנט:',e);
@@ -3506,60 +3604,64 @@ async function transferPlanBToGantt(){
   }
 }
 
-async function openPlanB(){
-  if(!planBLoaded){
-    await fetchPlanB();
+async function openPlanB(setKey){
+  const set=planBSets[setKey];
+  if(!set.loaded){
+    await fetchPlanB(setKey);
   } else {
-    renderPlanBList();
-    fetchPlanB();  // רענון שקט ברקע
+    renderPlanBList(setKey);
+    fetchPlanB(setKey);  // רענון שקט ברקע
   }
 }
 
-async function fetchPlanB(){
-  const sub=document.getElementById('planBSub');
-  const body=document.getElementById('planBBody');
-  if(!planBLoaded){
+async function fetchPlanB(setKey){
+  const set=planBSets[setKey];
+  const sub=document.getElementById(set.subId);
+  const body=document.getElementById(set.bodyId);
+  if(!set.loaded){
     body.innerHTML='<div class="planb-loading"><div class="app-loader-spin" style="width:40px;height:40px;border-width:4px;margin:0 auto"></div></div>';
   }
   try{
-    const r=await fetch(SCRIPT_URL+'?action=getPlanB');
+    const r=await fetch(SCRIPT_URL+'?action=getPlanB&data='+encodeURIComponent(JSON.stringify({sheetName:set.sheetName})));
     const j=await r.json();
-    planBData=(j.rows||[]).map((r,i)=>({
+    set.data=(j.rows||[]).map((row,i)=>({
       rowIndex:i+2,  // שורה 1 = כותרות, נתונים מתחילים בשורה 2
-      building:(r[0]||'').toString().trim(),
-      floor:(r[1]||'').toString().trim(),
-      domain:(r[2]||'').toString().trim(),
-      subtype:(r[3]||'').toString().trim(),
-      round:(r[4]||'').toString().trim(),
-      team:(r[5]||'').toString().trim(),
-      execDate:(r[6]||'').toString().trim(),
-      execStatus:(r[7]||'').toString().trim(),
-      distDate:(r[8]||'').toString().trim(),
-      reportLink:(r[9]||'').toString().trim(),
-      distributed:(r[10]||'').toString().trim(),
+      seq:(row[0]!==undefined&&row[0]!==null&&row[0]!=='')?row[0].toString().trim():'',
+      building:(row[1]||'').toString().trim(),
+      floor:(row[2]||'').toString().trim(),
+      domain:(row[3]||'').toString().trim(),
+      subtype:(row[4]||'').toString().trim(),
+      round:(row[5]||'').toString().trim(),
+      team:(row[6]||'').toString().trim(),
+      execDate:(row[7]||'').toString().trim(),
+      execStatus:(row[8]||'').toString().trim(),
+      distDate:(row[9]||'').toString().trim(),
+      reportLink:(row[10]||'').toString().trim(),
+      distributed:(row[11]||'').toString().trim(),
     })).filter(x=>x.building||x.domain||x.subtype);
-    planBLoaded=true;
-    renderPlanBList();
+    set.loaded=true;
+    renderPlanBList(setKey);
   }catch(e){
     console.error('שגיאת טעינת תכנון שלב ב:',e);
-    if(!planBLoaded){
+    if(!set.loaded){
       body.innerHTML='<div class="planb-loading" style="color:var(--muted)">⚠️ שגיאה בטעינת הנתונים. נסה שוב.</div>';
       sub.textContent='שגיאת חיבור';
     }
   }
 }
 
-function renderPlanBList(){
-  const q=(document.getElementById('planBSearch')?.value||'').trim().toLowerCase();
-  const body=document.getElementById('planBBody');
-  const sub=document.getElementById('planBSub');
+function renderPlanBList(setKey){
+  const set=planBSets[setKey];
+  const q=(document.getElementById(set.searchId)?.value||'').trim().toLowerCase();
+  const body=document.getElementById(set.bodyId);
+  const sub=document.getElementById(set.subId);
 
-  let list=planBData;
+  let list=set.data;
   if(q){
     list=list.filter(x=>[x.building,x.floor,x.domain,x.subtype,x.team,x.execStatus]
       .join(' ').toLowerCase().includes(q));
   }
-  sub.textContent=`${list.length} רשומות מתוך ${planBData.length}`;
+  sub.textContent=`${list.length} רשומות מתוך ${set.data.length}`;
 
   if(!list.length){
     body.innerHTML='<div class="planb-loading" style="color:var(--muted)">🔍 לא נמצאו רשומות תואמות</div>';
@@ -3569,14 +3671,16 @@ function renderPlanBList(){
   const ec=v=>v?`<span>${v}</span>`:'<span class="pb-empty-cell">—</span>';
 
   const rowsHtml=list.map((x,i)=>{
-    const realIdx=planBData.indexOf(x);
+    const realIdx=set.data.indexOf(x);
+    const isSurvey=/סקר/.test(x.subtype||'');
     const statusColorVal=x.execStatus?statusColor(x.execStatus):null;
     const reportHtml=x.reportLink
       ? (/^https?:\/\//.test(x.reportLink)
-          ? `<a class="pb-link" href="${x.reportLink}" target="_blank" rel="noopener" onclick="event.stopPropagation()">📎 דו"ח</a>`
+          ? `<button type="button" class="pb-link" style="background:none;border:none;padding:0;font:inherit;cursor:pointer" onclick="event.stopPropagation();showDocPreview('${x.reportLink.replace(/'/g,"\\'")}')">📎 דו"ח</button>`
           : ec(x.reportLink))
       : ec();
-    return `<tr class="pb-row" style="animation-delay:${Math.min(i*.02,.35)}s" onclick="showPlanBDetail(${realIdx})" title="לחץ לצפייה ועריכה">
+    return `<tr class="pb-row${isSurvey?' pb-row-survey':''}" style="animation-delay:${Math.min(i*.02,.35)}s" onclick="showPlanBDetail('${setKey}',${realIdx})" title="${isSurvey?'סקר · ':''}לחץ לצפייה ועריכה">
+      <td class="pb-seq-cell">${x.seq||'—'}</td>
       <td class="pb-bld-cell">${x.building||'—'}</td>
       <td>${x.floor||'—'}</td>
       <td>${x.domain?`<span class="pb-domain-badge" style="background:${planBDomainColor(x.domain)}">${x.domain}</span>`:'<span class="pb-empty-cell">—</span>'}</td>
@@ -3593,7 +3697,7 @@ function renderPlanBList(){
 
   body.innerHTML=`<table class="pb-table">
     <thead><tr>
-      <th>מבנה</th><th>קומה</th><th>תחום הבדיקה</th><th>סוג הבדיקה</th><th>סבב</th>
+      <th>מס"ד</th><th>מבנה</th><th>קומה</th><th>תחום הבדיקה</th><th>סוג הבדיקה</th><th>סבב</th>
       <th>צוות מבצע</th><th>תאריך ביצוע</th><th>סטטוס ביצוע</th>
       <th>תאריך הפצת דו"ח למנהל</th><th>צרופת דו"ח ליקויים</th><th>האם הופץ לזכיין</th>
     </tr></thead>
@@ -4715,7 +4819,8 @@ function switchTab(id,el){
   el.classList.add('on');
   document.getElementById('tc'+id).classList.add('on');
   if(id==='L') renderL();
-  if(id==='P') openPlanB();
+  if(id==='P') openPlanB('B');
+  if(id==='Q') openPlanB('T');
 }
 
 // ── AUTO LOGOUT אחרי חצי שעה חוסר פעילות ──
