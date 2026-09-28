@@ -1244,6 +1244,26 @@ body.admin-named .named-admin-only{display:inline-flex}
 .planb-loading{padding:4rem 0;text-align:center;margin:auto;width:100%}
 
 .pb-table-wrap{overflow:auto;border:1px solid var(--border);border-radius:10px;flex:1;width:100%;max-height:65vh}
+
+/* מיון וסינון לפי עמודה */
+.pb-th{display:flex;align-items:center;justify-content:space-between;gap:4px;cursor:pointer;user-select:none;white-space:nowrap}
+.pb-th-label{display:flex;align-items:center;gap:3px}
+.pb-sort-ic{font-size:9px;min-width:8px;display:inline-block}
+.pb-filter-btn{flex-shrink:0;background:rgba(255,255,255,.18);border:none;color:#fff;border-radius:5px;width:19px;height:19px;font-size:10px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.pb-filter-btn:hover{background:rgba(255,255,255,.32)}
+.pb-filter-btn.active{background:#fbbf24;color:#1e293b}
+.pb-filter-panel{position:absolute;top:100%;right:0;margin-top:4px;background:#fff;color:var(--text);border:1px solid var(--border);border-radius:10px;box-shadow:var(--sh3);z-index:50;min-width:190px;max-width:260px;padding:8px;font-weight:400;font-size:12.5px;white-space:normal;text-transform:none;letter-spacing:normal}
+.pb-filter-search{width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;margin-bottom:6px;font-family:inherit}
+.pb-filter-list{max-height:190px;overflow-y:auto;display:flex;flex-direction:column;gap:1px}
+.pb-filter-opt{display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:6px;font-size:12.5px;cursor:pointer}
+.pb-filter-opt:hover{background:var(--surface2)}
+.pb-filter-opt input{flex-shrink:0}
+.pb-filter-actions{display:flex;gap:6px;margin-top:7px}
+.pb-filter-actions button{flex:1;padding:6px;border-radius:6px;border:none;font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit}
+.pb-fa-neutral{background:var(--surface2);color:var(--text)}
+.pb-fa-neutral:hover{background:var(--border)}
+.pb-fa-primary{background:var(--navy);color:#fff}
+.pb-fa-primary:hover{opacity:.9}
 .pb-table{border-collapse:separate;border-spacing:0;width:100%;min-width:1000px;font-size:12.5px}
 .pb-table thead th{
   position:sticky;top:0;z-index:5;background:var(--navy);color:#fff;
@@ -1802,10 +1822,11 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
   <div class="tc" id="tcP">
     <div class="lcard">
       <div class="ltoolbar">
-        <div class="lsearch-wrap">
-          <span class="lsearch-ic">🔍</span>
-          <input type="text" id="planBSearch" placeholder="חיפוש לפי מבנה, תחום, צוות..." oninput="renderPlanBList('B')"/>
+        <div class="lsearch-wrap" style="flex:1;min-width:0">
+          <span class="lsearch-ic">🔎</span>
+          <span id="planBFilterSummary" style="color:var(--muted);font-size:13px">לחץ על ▾ בראש כל עמודה כדי למיין או לסנן</span>
         </div>
+        <button class="lexport-btn" style="background:var(--surface2);color:var(--text)" onclick="pbClearAllFilters('B')" title="נקה את כל הסינונים בטבלה זו">🧹 נקה סינון</button>
         <div class="lcount" id="planBSub"></div>
         <button class="lexport-btn" onclick="openNewPlanBRow('B')" title="הוספת שורת תכנון חדשה">➕ הוספת שורה</button>
       </div>
@@ -1820,10 +1841,11 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
   <div class="tc" id="tcQ">
     <div class="lcard">
       <div class="ltoolbar">
-        <div class="lsearch-wrap">
-          <span class="lsearch-ic">🔍</span>
-          <input type="text" id="planBSearch2" placeholder="חיפוש לפי מבנה, תחום, צוות..." oninput="renderPlanBList('T')"/>
+        <div class="lsearch-wrap" style="flex:1;min-width:0">
+          <span class="lsearch-ic">🔎</span>
+          <span id="planBFilterSummary2" style="color:var(--muted);font-size:13px">לחץ על ▾ בראש כל עמודה כדי למיין או לסנן</span>
         </div>
+        <button class="lexport-btn" style="background:var(--surface2);color:var(--text)" onclick="pbClearAllFilters('T')" title="נקה את כל הסינונים בטבלה זו">🧹 נקה סינון</button>
         <div class="lcount" id="planBSub2"></div>
         <button class="lexport-btn" onclick="openNewPlanBRow('T')" title="הוספת שורת תכנון חדשה">➕ הוספת שורה</button>
       </div>
@@ -3291,8 +3313,8 @@ async function updateSchedule(){
 // ===== תכנון שלב ב' – פאנל רשימה =====
 // ===== תכנון שלב ב' (רגיל + תקשוב) – מצב כללי לכמה גיליונות =====
 let planBSets={
-  B:{data:[], loaded:false, sheetName:'תכנון שלב ב', searchId:'planBSearch', bodyId:'planBBody', subId:'planBSub'},
-  T:{data:[], loaded:false, sheetName:'תכנון שלב ב - תקשוב', searchId:'planBSearch2', bodyId:'planBBody2', subId:'planBSub2'}
+  B:{data:[], loaded:false, sheetName:'תכנון שלב ב', bodyId:'planBBody', subId:'planBSub', summaryId:'planBFilterSummary', sortKey:'', sortDir:1, filters:{}},
+  T:{data:[], loaded:false, sheetName:'תכנון שלב ב - תקשוב', bodyId:'planBBody2', subId:'planBSub2', summaryId:'planBFilterSummary2', sortKey:'', sortDir:1, filters:{}}
 };
 const PLANB_DC={
   'אפיון':'#7c3aed', 'תפעול':'#f97316', 'הנדסי':'#0891b2',
@@ -3689,21 +3711,181 @@ async function fetchPlanB(setKey){
   }
 }
 
+// ===== מיון וסינון לפי עמודה - תכנון שלב ב' =====
+const PB_COLUMNS=[
+  {key:'seq',        label:'מס"ד'},
+  {key:'building',   label:'מבנה'},
+  {key:'floor',      label:'קומה'},
+  {key:'domain',     label:'תחום הבדיקה'},
+  {key:'subtype',    label:'סוג הבדיקה'},
+  {key:'round',      label:'סבב'},
+  {key:'team',       label:'צוות מבצע'},
+  {key:'execDate',   label:'תאריך ביצוע',           date:true},
+  {key:'execStatus', label:'סטטוס ביצוע'},
+  {key:'distDate',   label:'תאריך הפצת דו"ח למנהל', date:true},
+  {key:'reportLink', label:'צרופת דו"ח ליקויים'},
+  {key:'distributed',label:'האם הופץ לזכיין'},
+];
+
+// ערך "תצוגה" של תא לצורך סינון (כמו שהמשתמש רואה אותו, לא הערך הגולמי)
+function pbDisplayVal_(x,colKey){
+  let v=x[colKey];
+  if(colKey==='reportLink') v=v?'יש קובץ מצורף':'ללא קובץ';
+  return (v===undefined||v===null||v==='')?'(ריק)':String(v);
+}
+
+function pbColCompare(a,b,col){
+  if(col.date){
+    const d1=pbDateToISO(a[col.key])||'', d2=pbDateToISO(b[col.key])||'';
+    if(!d1&&!d2) return 0;
+    if(!d1) return 1;   // תאריכים ריקים תמיד בסוף
+    if(!d2) return -1;
+    return d1<d2?-1:(d1>d2?1:0);
+  }
+  const s1=String(a[col.key]||'').trim(), s2=String(b[col.key]||'').trim();
+  if(!s1&&!s2) return 0;
+  if(!s1) return 1;
+  if(!s2) return -1;
+  const n1=Number(s1), n2=Number(s2);
+  if(!isNaN(n1)&&!isNaN(n2)&&s1!==''&&s2!=='') return n1-n2;
+  return s1.localeCompare(s2,'he',{numeric:true,sensitivity:'base'});
+}
+
+function pbUniqueValues(setKey,colKey){
+  const set=planBSets[setKey];
+  const vals=new Set();
+  set.data.forEach(x=>vals.add(pbDisplayVal_(x,colKey)));
+  return Array.from(vals).sort((a,b)=>a.localeCompare(b,'he',{numeric:true,sensitivity:'base'}));
+}
+
+function pbSetSort(setKey,colKey){
+  const set=planBSets[setKey];
+  if(set.sortKey===colKey) set.sortDir*=-1;
+  else{ set.sortKey=colKey; set.sortDir=1; }
+  renderPlanBList(setKey);
+}
+
+let _pbFilterOpen=null; // {setKey,colKey}
+function pbToggleFilter(setKey,colKey,ev){
+  if(ev) ev.stopPropagation();
+  if(_pbFilterOpen&&_pbFilterOpen.setKey===setKey&&_pbFilterOpen.colKey===colKey){
+    _pbFilterOpen=null;
+  } else {
+    _pbFilterOpen={setKey,colKey};
+  }
+  renderPlanBList(setKey);
+}
+
+function pbFilterPanelHtml(setKey,colKey){
+  const set=planBSets[setKey];
+  const vals=pbUniqueValues(setKey,colKey);
+  const active=set.filters[colKey]; // Set | undefined (undefined = הכל נבחר)
+  const optsHtml=vals.map(v=>{
+    const checked=(!active||active.has(v))?'checked':'';
+    return `<label class="pb-filter-opt">
+      <input type="checkbox" data-fv="${v.replace(/"/g,'&quot;')}" ${checked}/>
+      <span>${v}</span>
+    </label>`;
+  }).join('');
+  return `<div class="pb-filter-panel" onclick="event.stopPropagation()">
+    <input type="text" class="pb-filter-search" placeholder="חיפוש ערך..." oninput="pbFilterSearchType(this)"/>
+    <div class="pb-filter-list">${optsHtml||'<div style="padding:6px;color:var(--muted);font-size:12px">אין ערכים</div>'}</div>
+    <div class="pb-filter-actions">
+      <button type="button" class="pb-fa-neutral" onclick="pbFilterSelectAll(true)">בחר הכל</button>
+      <button type="button" class="pb-fa-neutral" onclick="pbFilterSelectAll(false)">נקה הכל</button>
+    </div>
+    <div class="pb-filter-actions">
+      <button type="button" class="pb-fa-primary" onclick="pbApplyFilter('${setKey}','${colKey}')">אישור</button>
+      <button type="button" class="pb-fa-neutral" onclick="pbCancelFilterPanel()">ביטול</button>
+    </div>
+  </div>`;
+}
+function pbFilterSearchType(input){
+  const q=input.value.trim().toLowerCase();
+  const panel=input.closest('.pb-filter-panel');
+  panel.querySelectorAll('.pb-filter-opt').forEach(opt=>{
+    const txt=opt.textContent.trim().toLowerCase();
+    opt.style.display=(!q||txt.includes(q))?'flex':'none';
+  });
+}
+function pbFilterSelectAll(val){
+  document.querySelectorAll('.pb-filter-panel .pb-filter-opt').forEach(opt=>{
+    if(opt.style.display!=='none') opt.querySelector('input[type=checkbox]').checked=val;
+  });
+}
+function pbApplyFilter(setKey,colKey){
+  const set=planBSets[setKey];
+  const allVals=pbUniqueValues(setKey,colKey);
+  const checked=new Set();
+  document.querySelectorAll('.pb-filter-panel input[type=checkbox]').forEach(cb=>{
+    if(cb.checked) checked.add(cb.dataset.fv);
+  });
+  if(!checked.size){ toast('יש לבחור לפחות ערך אחד לסינון','warn'); return; }
+  if(checked.size===allVals.length) delete set.filters[colKey];
+  else set.filters[colKey]=checked;
+  _pbFilterOpen=null;
+  renderPlanBList(setKey);
+}
+function pbCancelFilterPanel(){
+  const sk=_pbFilterOpen?_pbFilterOpen.setKey:null;
+  _pbFilterOpen=null;
+  if(sk) renderPlanBList(sk);
+}
+function pbClearAllFilters(setKey){
+  const set=planBSets[setKey];
+  set.filters={};
+  set.sortKey='';
+  set.sortDir=1;
+  _pbFilterOpen=null;
+  renderPlanBList(setKey);
+}
+document.addEventListener('click',function(){
+  if(_pbFilterOpen){
+    const sk=_pbFilterOpen.setKey;
+    _pbFilterOpen=null;
+    renderPlanBList(sk);
+  }
+});
+
 function renderPlanBList(setKey){
   const set=planBSets[setKey];
-  const q=(document.getElementById(set.searchId)?.value||'').trim().toLowerCase();
   const body=document.getElementById(set.bodyId);
   const sub=document.getElementById(set.subId);
+  const summaryEl=document.getElementById(set.summaryId);
 
   let list=set.data;
-  if(q){
-    list=list.filter(x=>[x.building,x.floor,x.domain,x.subtype,x.team,x.execStatus]
-      .join(' ').toLowerCase().includes(q));
+  const activeFilterKeys=Object.keys(set.filters);
+  if(activeFilterKeys.length){
+    list=list.filter(x=>activeFilterKeys.every(colKey=>set.filters[colKey].has(pbDisplayVal_(x,colKey))));
   }
+  if(set.sortKey){
+    const col=PB_COLUMNS.find(c=>c.key===set.sortKey);
+    if(col) list=list.slice().sort((a,b)=>pbColCompare(a,b,col)*set.sortDir);
+  }
+
   sub.textContent=`${list.length} רשומות מתוך ${set.data.length}`;
+  if(summaryEl){
+    summaryEl.textContent=activeFilterKeys.length
+      ? `🔎 מסונן לפי ${activeFilterKeys.length} עמוד(ות) — ${list.length} מתוך ${set.data.length}`
+      : 'לחץ על ▾ בראש כל עמודה כדי למיין או לסנן';
+  }
+
+  const theadHtml=`<tr>${PB_COLUMNS.map(col=>{
+    const sortIc=(set.sortKey===col.key)?(set.sortDir===1?' ▲':' ▼'):'';
+    const filterActive=!!set.filters[col.key];
+    const panelOpen=_pbFilterOpen&&_pbFilterOpen.setKey===setKey&&_pbFilterOpen.colKey===col.key;
+    return `<th style="position:relative">
+      <div class="pb-th">
+        <span class="pb-th-label" onclick="pbSetSort('${setKey}','${col.key}')" title="מיון לפי ${col.label}">${col.label}<span class="pb-sort-ic">${sortIc}</span></span>
+        <button type="button" class="pb-filter-btn${filterActive?' active':''}" onclick="pbToggleFilter('${setKey}','${col.key}',event)" title="סינון לפי ${col.label}">▾</button>
+      </div>
+      ${panelOpen?pbFilterPanelHtml(setKey,col.key):''}
+    </th>`;
+  }).join('')}</tr>`;
 
   if(!list.length){
-    body.innerHTML='<div class="planb-loading" style="color:var(--muted)">🔍 לא נמצאו רשומות תואמות</div>';
+    body.innerHTML=`<table class="pb-table"><thead>${theadHtml}</thead><tbody></tbody></table>
+      <div class="planb-loading" style="color:var(--muted)">🔍 לא נמצאו רשומות תואמות לסינון שנבחר</div>`;
     return;
   }
 
@@ -3735,11 +3917,7 @@ function renderPlanBList(setKey){
   }).join('');
 
   body.innerHTML=`<table class="pb-table">
-    <thead><tr>
-      <th>מס"ד</th><th>מבנה</th><th>קומה</th><th>תחום הבדיקה</th><th>סוג הבדיקה</th><th>סבב</th>
-      <th>צוות מבצע</th><th>תאריך ביצוע</th><th>סטטוס ביצוע</th>
-      <th>תאריך הפצת דו"ח למנהל</th><th>צרופת דו"ח ליקויים</th><th>האם הופץ לזכיין</th>
-    </tr></thead>
+    <thead>${theadHtml}</thead>
     <tbody>${rowsHtml}</tbody>
   </table>`;
 }
