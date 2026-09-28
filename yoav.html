@@ -3359,6 +3359,12 @@ function isoToPbDate(iso){
   if(parts.length!==3) return '';
   return parts[2]+'/'+parts[1]+'/'+parts[0].slice(-2);
 }
+// מציג תאריך תמיד בפורמט אחיד dd/mm/yy בתצוגה, לא משנה איך הוא נשמר בגיליון (עם / או עם . או עם -)
+function pbFormatDateDisplay(s){
+  if(!s) return '';
+  const iso=pbDateToISO(s);
+  return iso?isoToPbDate(iso):String(s).trim();
+}
 // ממלא <select> עם ערך, ומוסיף אותו כאופציה זמנית אם הוא לא ברשימה הקיימת (כדי לא לאבד נתונים ישנים/מותאמים)
 function pbSelSetWithCustom(selId,value){
   const sel=document.getElementById(selId);
@@ -3908,9 +3914,9 @@ function renderPlanBList(setKey){
       <td>${ec(x.subtype)}</td>
       <td>${ec(x.round)}</td>
       <td>${ec(x.team)}</td>
-      <td>${ec(x.execDate)}</td>
+      <td>${ec(pbFormatDateDisplay(x.execDate))}</td>
       <td>${x.execStatus?`<span class="pb-status-pill" style="background:${statusColorVal}">${x.execStatus}</span>`:'<span class="pb-empty-cell">—</span>'}</td>
-      <td>${ec(x.distDate)}</td>
+      <td>${ec(pbFormatDateDisplay(x.distDate))}</td>
       <td>${reportHtml}</td>
       <td>${planBBoolBadge(x.distributed)}</td>
     </tr>`;
