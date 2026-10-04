@@ -2277,7 +2277,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
 
 <script>
 // ============================================================
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxCpF_Zj66yYjQ2FQeuS4RG_22C0APO744RvWFDWtRlffJdkloUWe1XKihCJPSt7JDMsQ/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzvCqGC5sRJ3VqECjUjorWypYgUMHa_Lu-ytCXhkxBVGoFMk2dvoubQM2tznOij_8FLpw/exec';
 // ============================================================
 
 
@@ -2606,7 +2606,7 @@ function parseChecks(raw){
       crew:ns.map((n,idx)=>({name:n,email:es[idx]||''})),
       status:(r[7]||'טרם התחיל').toString().trim(),  // עמודה H
       notes:(r[8]||'').toString().trim(),                // עמודה I
-      round:(r[10]||'').toString().trim(),               // עמודה K – סבב
+      round:(r[10]!==undefined&&r[10]!==null?r[10]:'').toString().trim(), // עמודה K – סבב (שים לב: 0 הוא ערך תקין ולא ריק)
       fileUrl:(r[11]||'').toString().trim(),             // עמודה L – מסמך בדיקה בדרייב
       title:(r[12]||'').toString().trim(),               // עמודה M – שם בדיקה חופשי
       hours:(r[13]||'').toString().trim()                // עמודה N – שעות הבדיקה (למשל 09:00-10:00)
@@ -3742,7 +3742,7 @@ async function fetchPlanB(setKey){
       floor:(row[2]||'').toString().trim(),
       domain:(row[3]||'').toString().trim(),
       subtype:(row[4]||'').toString().trim(),
-      round:(row[5]||'').toString().trim(),
+      round:(row[5]!==undefined&&row[5]!==null?row[5]:'').toString().trim(), // 0 הוא ערך תקין ולא ריק
       team:(row[6]||'').toString().trim(),
       execDate:(row[7]||'').toString().trim(),
       execStatus:(row[8]||'').toString().trim(),
@@ -4142,7 +4142,7 @@ function buildImpPreview(hdrRow,dataRows){
       const iso=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
       _impRows.push({date:iso,building,floor,domain,
         subtype:String(get(map.subtype)||'').trim(),
-        round:String(get(map.round)||'').trim(),
+        round:(function(){const v=get(map.round);return (v!==undefined&&v!==null)?String(v).trim():'';})(),
         hours,
         name:crew.map(p=>p.name).join(', '),
         email:crew.map(p=>p.email).join(', ')});
@@ -4365,7 +4365,7 @@ function openEditModal(idx){
   const efT=document.getElementById('efTitle');
   if(efT) efT.value=c.title||'';
   const efR=document.getElementById('efRound');
-  if(efR) efR.value=c.round||'1';
+  if(efR) efR.value=(c.round!==undefined&&c.round!==null&&c.round!==''?c.round:'1');
   const hoursParts=(c.hours||'09:00-10:00').split('-');
   setTimeVal('ef','Start',hoursParts[0]||'09:00');
   setTimeVal('ef','End',hoursParts[1]||'10:00');
@@ -4754,7 +4754,7 @@ function exportToExcel(){
       c.floor||'',
       c.domain||'',
       c.subtype||'',
-      c.round||'',
+      (c.round!==undefined&&c.round!==null?c.round:''),
       c.crew.map(p=>p.name).join(', '),
       c.date?c.date.toLocaleDateString('he-IL'):'',
       c.status||'טרם התחיל',
