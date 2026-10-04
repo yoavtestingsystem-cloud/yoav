@@ -1356,6 +1356,16 @@ body.admin-named .named-admin-only{display:inline-flex}
 }
 .dur-chip:hover{background:var(--navy);color:#fff;border-color:transparent;transform:translateY(-1px)}
 .dur-chip:active{transform:scale(.94)}
+
+/* צרופות מרובות בפופ-אפ תכנון שלב ב' */
+.pbe-attach-list{display:flex;flex-direction:column;gap:6px}
+.pbe-attach-empty{color:var(--muted);font-size:12.5px;padding:4px 2px}
+.pbe-attach-chip{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:7px 10px;font-size:12.5px}
+.pbe-attach-ic{flex-shrink:0}
+.pbe-attach-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
+.pbe-attach-btn{flex-shrink:0;background:none;border:none;cursor:pointer;font-size:13px;padding:2px 4px;border-radius:6px;line-height:1}
+.pbe-attach-btn:hover{background:var(--border)}
+.pbe-attach-remove{color:#dc2626}
 @media(max-width:420px){
   .time-range-box{gap:8px;padding:12px 8px}
   .time-picker{padding:7px 8px}
@@ -1706,6 +1716,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
     <button class="btn-hdr" onclick="syncData()">↻ רענון</button>
     <button class="btn-hdr named-admin-only" onclick="openImport()" title="ייבוא בדיקות מקובץ אקסל">📥 ייבוא מאקסל</button>
     <button class="btn-hdr named-admin-only" id="schedUpdateBtn" onclick="updateSchedule()" title="שליחת עדכון זימון ל-50 הלו״זים הקרובים" style="display:inline-flex;align-items:center;gap:6px"><div class="btn-spinner"></div><span id="schedUpdateBtnTxt">🔄 עדכון לו"ז</span></button>
+    <button class="btn-hdr named-admin-only" id="syncPlanBBtn" onclick="syncAllPlanBToGantt()" title="עבור על כל שורות תכנון שלב ב'/תקשוב עם תאריך ביצוע וודא שיש להן תאום בגאנט (חד-פעמי, לשורות ישנות)" style="display:inline-flex;align-items:center;gap:6px"><div class="btn-spinner"></div><span id="syncPlanBBtnTxt">🔄 סנכרן קיימות לגאנט</span></button>
     <button class="btn-new btn-hdr-new admin-only" onclick="togglePlusMenu(event,this)">＋ בדיקה חדשה</button>
   </div>
 </header>
@@ -1722,12 +1733,6 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
       <button class="tab" onclick="switchTab('L',this)">📋 רשימה</button>
       <button class="tab" onclick="switchTab('P',this)">📐 תכנון שלב ב'</button>
       <button class="tab" onclick="switchTab('Q',this)">🔧 תכנון שלב ב' תקשוב</button>
-    </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn-period" onclick="showPeriod('day')">📆 היום</button>
-      <button class="btn-period" onclick="showPeriod('week')">🗓️ השבוע</button>
-      <button class="btn-period" onclick="openMonthCalendar()">📆 החודש</button>
-      <button class="btn-holo" onclick="showHolo()">🔮 אולוגרמה</button>
     </div>
   </div>
 
@@ -2024,7 +2029,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
         </select>
       </div>
       <div class="fg"><label>סבב</label>
-        <select id="pbeRound"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select>
+        <select id="pbeRound"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select>
       </div>
     </div>
     <div class="fg"><label>סוג הבדיקה</label><input type="text" id="pbeSubtype"/></div>
@@ -2046,14 +2051,15 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
       </div>
     </div>
     <div class="fg">
-      <label>צרופת דו"ח ליקויים</label>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <input type="text" id="pbeReportLink" placeholder="קישור או טקסט חופשי" style="flex:1;min-width:160px" oninput="pbUpdateReportPreviewBtn()"/>
-        <button type="button" class="dur-chip" id="pbeReportPreviewBtn" style="display:none;white-space:nowrap" onclick="showDocPreview(document.getElementById('pbeReportLink').value)">👁️ תצוגה מקדימה</button>
+      <label>צרופות דו"ח ליקויים (אפשר כמה)</label>
+      <div id="pbeAttachList" class="pbe-attach-list"></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px">
+        <input type="text" id="pbeReportLink" placeholder="הוספת קישור או טקסט חופשי" style="flex:1;min-width:160px" onkeydown="if(event.key==='Enter'){event.preventDefault();pbAddManualLink();}"/>
+        <button type="button" class="dur-chip" onclick="pbAddManualLink()">➕ הוסף</button>
       </div>
       <div class="admin-only" style="margin-top:8px">
-        <input type="file" id="pbeReportFile" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg" style="display:none" onchange="pbReportFileChosen(this)"/>
-        <button type="button" class="dur-chip" onclick="document.getElementById('pbeReportFile').click()">📤 <span id="pbeReportUploadTxt">העלאת קובץ (Excel/ Word/ PDF)</span></button>
+        <input type="file" id="pbeReportFile" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg" multiple style="display:none" onchange="pbReportFileChosen(this)"/>
+        <button type="button" class="dur-chip" onclick="document.getElementById('pbeReportFile').click()">📤 <span id="pbeReportUploadTxt">העלאת קבצים (אפשר לבחור כמה יחד)</span></button>
       </div>
     </div>
 
@@ -2061,10 +2067,6 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
       <button class="btn-save" id="pbeSaveBtn" onclick="savePlanBEdit()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px">
         <div class="btn-spinner" style="border-top-color:#fff"></div>
         <span id="pbeSaveBtnTxt">💾 שמור עדכונים</span>
-      </button>
-      <button class="btn-save" id="pbeTransferBtn" onclick="transferPlanBToGantt()" style="width:100%;background:linear-gradient(135deg,#0f5132,#15803d);display:flex;align-items:center;justify-content:center;gap:8px">
-        <div class="btn-spinner" style="border-top-color:#fff"></div>
-        <span id="pbeTransferBtnTxt">📅 העבר לגאנט</span>
       </button>
       <button class="btn-save" id="pbeDeleteBtn" onclick="deletePlanBEdit()" style="width:100%;background:linear-gradient(135deg,#b91c1c,#7f1d1d);display:flex;align-items:center;justify-content:center;gap:8px">
         <div class="btn-spinner" style="border-top-color:#fff"></div>
@@ -2174,7 +2176,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
     </div>
     <div class="frow">
       <div class="fg"><label>קומה</label><select id="efFloor"></select></div>
-      <div class="fg"><label>תחום הבדיקה</label><select id="efDomain" onchange="onEditDomChange()"><option>מאיפנים</option><option>בדיקות</option><option>יועצים</option><option>אחר</option></select></div>
+      <div class="fg"><label>תחום הבדיקה</label><select id="efDomain" onchange="onEditDomChange()"><option>אפיון</option><option>הבטחת איכות</option><option>יועצים</option><option>אחר</option></select></div>
       <div class="fg"><label>סוג הבדיקה <span style="color:#dc2626">*</span></label>
         <div class="mchips" id="efSubChips"></div>
         <div class="mchips-hint">אפשר לבחור כמה סוגי בדיקה</div>
@@ -2275,7 +2277,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
 
 <script>
 // ============================================================
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzz5JGiGUHQHyZHmT0bQfU_ShtGaLsqfmFqInrSwkGn110Z3fWwNakr6XQg_Oxbce-7/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxCpF_Zj66yYjQ2FQeuS4RG_22C0APO744RvWFDWtRlffJdkloUWe1XKihCJPSt7JDMsQ/exec';
 // ============================================================
 
 
@@ -2314,10 +2316,9 @@ function parseLocalDate(str){
 }
 const DC={
   'תפעול':'#f97316',      // כתום
-  'מאפיינים':'#34d399',   // ירוק חלש/בהיר
-  'מאיפנים':'#34d399',    // ירוק (כתיב חלופי)
+  'אפיון':'#34d399',      // ירוק חלש/בהיר
   'תקשוב':'#2563eb',      // כחול
-  'בדיקות':'#059669',
+  'הבטחת איכות':'#059669',
   'יועצים':'#7c3aed',
   'כללי':'#64748b',
   'אחר':'#64748b'
@@ -2644,11 +2645,11 @@ function pd(v){return parseLocalDate(v);}
 
 function demo(){
   staff=[
-    {name:'שרון אמיתי',building:'10a',domain:'מאיפנים',email:'sharon@ex.com'},
-    {name:'יוסי שמש',building:'10a',domain:'מאיפנים',email:'yosi@ex.com'},
-    {name:'איציק דבוש',building:'10a',domain:'בדיקות',email:'itzik@ex.com'},
+    {name:'שרון אמיתי',building:'10a',domain:'אפיון',email:'sharon@ex.com'},
+    {name:'יוסי שמש',building:'10a',domain:'אפיון',email:'yosi@ex.com'},
+    {name:'איציק דבוש',building:'10a',domain:'הבטחת איכות',email:'itzik@ex.com'},
     {name:'דנה לוי',building:'10b',domain:'יועצים',email:'dana@ex.com'},
-    {name:'משה כהן',building:'10b',domain:'בדיקות',email:'moshe@ex.com'},
+    {name:'משה כהן',building:'10b',domain:'הבטחת איכות',email:'moshe@ex.com'},
   ];
   blds=['10a','10b','10c'];
   bldFloors={
@@ -2657,13 +2658,13 @@ function demo(){
     '10c':new Set(['1','2','3','4','5','6','7','8','9']),
   };
   checks=[
-    {date:new Date(2026,5,14),building:'10a',floor:'9',domain:'מאיפנים',crew:[{name:'שרון אמיתי',email:'sharon@ex.com'},{name:'יוסי שמש',email:'yosi@ex.com'}]},
-    {date:new Date(2026,5,16),building:'10a',floor:'1',domain:'מאיפנים',crew:[{name:'יוסי שמש',email:'yosi@ex.com'}]},
-    {date:new Date(2026,5,18),building:'10a',floor:'3',domain:'בדיקות',crew:[{name:'איציק דבוש',email:'itzik@ex.com'}]},
-    {date:new Date(2026,5,15),building:'10b',floor:'5',domain:'מאיפנים',crew:[{name:'שרון אמיתי',email:'sharon@ex.com'}]},
+    {date:new Date(2026,5,14),building:'10a',floor:'9',domain:'אפיון',crew:[{name:'שרון אמיתי',email:'sharon@ex.com'},{name:'יוסי שמש',email:'yosi@ex.com'}]},
+    {date:new Date(2026,5,16),building:'10a',floor:'1',domain:'אפיון',crew:[{name:'יוסי שמש',email:'yosi@ex.com'}]},
+    {date:new Date(2026,5,18),building:'10a',floor:'3',domain:'הבטחת איכות',crew:[{name:'איציק דבוש',email:'itzik@ex.com'}]},
+    {date:new Date(2026,5,15),building:'10b',floor:'5',domain:'אפיון',crew:[{name:'שרון אמיתי',email:'sharon@ex.com'}]},
     {date:new Date(2026,5,22),building:'10a',floor:'2',domain:'יועצים',crew:[{name:'דנה לוי',email:'dana@ex.com'}]},
-    {date:new Date(2026,5,25),building:'10b',floor:'7',domain:'בדיקות',crew:[{name:'משה כהן',email:'moshe@ex.com'}]},
-    {date:new Date(2026,5,28),building:'10c',floor:'4',domain:'מאיפנים',crew:[{name:'שרון אמיתי',email:'sharon@ex.com'}]},
+    {date:new Date(2026,5,25),building:'10b',floor:'7',domain:'הבטחת איכות',crew:[{name:'משה כהן',email:'moshe@ex.com'}]},
+    {date:new Date(2026,5,28),building:'10c',floor:'4',domain:'אפיון',crew:[{name:'שרון אמיתי',email:'sharon@ex.com'}]},
   ];
   refresh();ss('ok','נתוני דוגמה');hideLoad();
 }
@@ -3310,11 +3311,51 @@ async function updateSchedule(){
   }
 }
 
+// סנכרון חד-פעמי (רטרואקטיבי) של שורות תכנון שלב ב'/תקשוב קיימות שנוצרו/עודכנו לפני
+// שהופעל הסנכרון האוטומטי לגאנט. שורות שנוצרות/מתעדכנות מעכשיו מסתנכרנות אוטומטית -
+// הכפתור הזה נועד רק "להשלים" שורות ישנות שכבר יש להן תאריך ביצוע אבל אין להן תאום בגאנט.
+async function syncAllPlanBToGantt(){
+  const cleanUser=(currentUser||'').replace(/[‎‏‪-‮]/g,'').trim().toLowerCase();
+  if(cleanUser!=='אדמין'&&cleanUser!=='admin'){toast('פעולה זו זמינה רק למשתמש אדמין','err');return;}
+  if(!confirm('הפעולה תעבור על כל השורות בתכנון שלב ב\' ובתקשוב שיש להן תאריך ביצוע, ותוודא שיש להן תאום בגאנט (בלי שליחת זימון מייל). שורות שכבר מסונכרנות רק יתעדכנו. להמשיך?')) return;
+
+  const btn=document.getElementById('syncPlanBBtn');
+  const txt=document.getElementById('syncPlanBBtnTxt');
+  try{
+    btn.classList.add('btn-spinning');
+    txt.textContent='מסנכרן...';
+    showAppLoader('מסנכרן שורות קיימות לגאנט...');
+    ss('loading','מסנכרן...');
+    const r=await fetch(SCRIPT_URL+'?action=syncAllPlanBToGantt&data='+encodeURIComponent(JSON.stringify({user:currentUser})));
+    const j=await r.json();
+    console.log('תשובת syncAllPlanBToGantt:',j);
+    if(j.ok){
+      toast(`✅ סונכרנו ${j.synced} שורות לגאנט`,'ok');
+      showAppLoader('מסנכרן נתונים...');
+      await sync();
+      planBSets.B.loaded=false; planBSets.T.loaded=false;
+      await fetchPlanB('B');
+      await fetchPlanB('T');
+    } else {
+      toast('שגיאה: '+(j.error||'לא ידוע'),'err');
+    }
+    ss('ok','מחובר');
+  }catch(e){
+    console.error('שגיאת סנכרון גורף לגאנט:',e);
+    ss('err','שגיאה');toast('שגיאת רשת - הסנכרון נכשל','err');
+  }finally{
+    btn.classList.remove('btn-spinning');
+    txt.textContent='🔄 סנכרן קיימות לגאנט';
+    hideAppLoader();
+  }
+}
+
 // ===== תכנון שלב ב' – פאנל רשימה =====
 // ===== תכנון שלב ב' (רגיל + תקשוב) – מצב כללי לכמה גיליונות =====
 let planBSets={
-  B:{data:[], loaded:false, sheetName:'תכנון שלב ב', bodyId:'planBBody', subId:'planBSub', summaryId:'planBFilterSummary', sortKey:'', sortDir:1, filters:{}},
-  T:{data:[], loaded:false, sheetName:'תכנון שלב ב - תקשוב', bodyId:'planBBody2', subId:'planBSub2', summaryId:'planBFilterSummary2', sortKey:'', sortDir:1, filters:{}}
+  // ברירת מחדל: מיון לפי תאריך ביצוע מהקרוב לרחוק, שורות ריקות בסוף - עד שינוי ידני ע"י לחיצה על כותרת עמודה
+  B:{data:[], loaded:false, sheetName:'תכנון שלב ב', bodyId:'planBBody', subId:'planBSub', summaryId:'planBFilterSummary', sortKey:'execDate', sortDir:1, filters:{}},
+  T:{data:[], loaded:false, sheetName:'תכנון שלב ב - תקשוב', bodyId:'planBBody2', subId:'planBSub2', summaryId:'planBFilterSummary2', sortKey:'execDate', sortDir:1, filters:{}}
 };
 const PLANB_DC={
   'אפיון':'#7c3aed', 'תפעול':'#f97316', 'הנדסי':'#0891b2',
@@ -3395,7 +3436,6 @@ function showPlanBDetail(setKey,idx){
   _pbeIsNew=false;
   document.getElementById('pbeModalTitle').textContent="📐 פרטי תכנון שלב ב'"+(setKey==='T'?" – תקשוב":'');
   document.getElementById('pbeSeqBadge').textContent=x.seq?`מס"ד ${x.seq}`:'';
-  document.getElementById('pbeTransferBtn').style.display='';
   document.getElementById('pbeDeleteBtn').style.display='';
   document.getElementById('pbeBuilding').value=x.building||'';
   document.getElementById('pbeFloor').value=x.floor||'';
@@ -3408,11 +3448,13 @@ function showPlanBDetail(setKey,idx){
   document.getElementById('pbeDistDate').value=pbDateToISO(x.distDate);
   _pbeDateSnapshot={execDate:document.getElementById('pbeExecDate').value,distDate:document.getElementById('pbeDistDate').value};
   pbSelSetWithCustom('pbeDistributed',x.distributed);
-  document.getElementById('pbeReportLink').value=x.reportLink||'';
+  document.getElementById('pbeReportLink').value='';
   const pbeFileInput=document.getElementById('pbeReportFile');
   if(pbeFileInput) pbeFileInput.value='';
-  document.getElementById('pbeReportUploadTxt').textContent='העלאת קובץ (Excel/ Word/ PDF)';
-  pbUpdateReportPreviewBtn();
+  // ממלאים את רשימת הצרופות הקיימות מהערך השמור (כל שורה = צרופה/קישור אחד)
+  _pbeAttachments=String(x.reportLink||'').split('\n').map(s=>s.trim()).filter(Boolean)
+    .map(v=>({type:'link',label:v,value:v}));
+  pbRenderAttachList();
   document.getElementById('planBDetailOverlay').classList.add('on');
   document.body.style.overflow='hidden';
 }
@@ -3425,7 +3467,6 @@ function openNewPlanBRow(setKey){
   document.getElementById('pbeModalTitle').textContent="➕ שורת תכנון חדשה"+(setKey==='T'?" – תקשוב":'');
   const nextSeq=Math.max(0,...planBSets[setKey].data.map(x=>Number(x.seq)||0))+1;
   document.getElementById('pbeSeqBadge').textContent=`מס"ד ${nextSeq} (יוקצה אוטומטית בשמירה)`;
-  document.getElementById('pbeTransferBtn').style.display='none';
   document.getElementById('pbeDeleteBtn').style.display='none';
   document.getElementById('pbeBuilding').value='';
   document.getElementById('pbeFloor').value='';
@@ -3441,8 +3482,8 @@ function openNewPlanBRow(setKey){
   document.getElementById('pbeReportLink').value='';
   const pbeFileInputNew=document.getElementById('pbeReportFile');
   if(pbeFileInputNew) pbeFileInputNew.value='';
-  document.getElementById('pbeReportUploadTxt').textContent='העלאת קובץ (Excel/ Word/ PDF)';
-  pbUpdateReportPreviewBtn();
+  _pbeAttachments=[];
+  pbRenderAttachList();
   document.getElementById('planBDetailOverlay').classList.add('on');
   document.body.style.overflow='hidden';
   document.getElementById('pbeBuilding').focus();
@@ -3455,29 +3496,60 @@ function closePlanBDetail(){
   _pbeIsNew=false;
 }
 
-// ===== צרופת דו"ח ליקויים – תצוגה מקדימה + העלאה (admin בלבד) =====
-function pbUpdateReportPreviewBtn(){
-  const val=document.getElementById('pbeReportLink').value.trim();
-  const btn=document.getElementById('pbeReportPreviewBtn');
-  btn.style.display=/^https?:\/\//.test(val)?'':'none';
-}
-function pbReportFileChosen(inputEl){
-  const file=inputEl.files[0];
-  const txt=document.getElementById('pbeReportUploadTxt');
-  if(!file){ txt.textContent='העלאת קובץ (Excel/ Word/ PDF)'; return; }
-  if(file.size>10*1024*1024){
-    toast('הקובץ גדול מדי (מקסימום 10MB)','err');
-    inputEl.value='';
-    txt.textContent='העלאת קובץ (Excel/ Word/ PDF)';
+// ===== צרופות דו"ח ליקויים – אפשר כמה קבצים/קישורים על אותה שורה =====
+// _pbeAttachments: רשימת {type:'link', label, value} לקישור/טקסט שכבר קיים (או נוסף ידנית),
+// או {type:'file', label, file} לקובץ שנבחר ועדיין ממתין להעלאה בזמן השמירה.
+let _pbeAttachments=[];
+
+function pbRenderAttachList(){
+  const wrap=document.getElementById('pbeAttachList');
+  if(!wrap) return;
+  if(!_pbeAttachments.length){
+    wrap.innerHTML='<div class="pbe-attach-empty">אין קבצים/קישורים מצורפים</div>';
     return;
   }
-  txt.textContent='נבחר: '+file.name;
+  wrap.innerHTML=_pbeAttachments.map((a,i)=>{
+    const isHttp=a.type==='link'&&/^https?:\/\//.test(a.value||'');
+    const icon=a.type==='file'?'📎':(isHttp?'🔗':'📝');
+    const nameEsc=String(a.label||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/'/g,'&#39;');
+    const previewBtn=isHttp?`<button type="button" class="pbe-attach-btn" onclick="showDocPreview('${String(a.value).replace(/'/g,"\\'")}')" title="תצוגה מקדימה">👁️</button>`:'';
+    const pendingTag=a.type==='file'?'<span style="color:var(--muted);font-size:10.5px">(ממתין להעלאה)</span>':'';
+    return `<div class="pbe-attach-chip">
+      <span class="pbe-attach-ic">${icon}</span>
+      <span class="pbe-attach-name" title="${nameEsc}">${nameEsc}</span>
+      ${pendingTag}
+      ${previewBtn}
+      <button type="button" class="pbe-attach-btn pbe-attach-remove" onclick="pbRemoveAttachment(${i})" title="הסר">✕</button>
+    </div>`;
+  }).join('');
 }
-// מעלה את הקובץ שנבחר (אם יש) לדרייב ומחזיר את הכתובת שהתקבלה, או null אם אין קובץ/נכשל
-async function pbUploadReportFileIfNeeded_(set,seq,rowIndexFallback){
-  const fileInput=document.getElementById('pbeReportFile');
-  const file=fileInput?.files[0];
-  if(!file) return null;
+function pbRemoveAttachment(i){
+  _pbeAttachments.splice(i,1);
+  pbRenderAttachList();
+}
+function pbAddManualLink(){
+  const input=document.getElementById('pbeReportLink');
+  const val=input.value.trim();
+  if(!val) return;
+  _pbeAttachments.push({type:'link',label:val,value:val});
+  input.value='';
+  pbRenderAttachList();
+}
+// בחירת קובץ/קבצים (אפשר כמה בבת אחת) - רק מוסיף לרשימה, ההעלאה בפועל קורית בזמן השמירה
+function pbReportFileChosen(inputEl){
+  const files=Array.from(inputEl.files||[]);
+  if(!files.length) return;
+  const tooBig=files.filter(f=>f.size>10*1024*1024);
+  const ok=files.filter(f=>f.size<=10*1024*1024);
+  if(tooBig.length){
+    toast(`⚠️ ${tooBig.length} קבצים גדולים מדי (מקסימום 10MB) ולא נוספו`,'warn');
+  }
+  ok.forEach(f=>_pbeAttachments.push({type:'file',label:f.name,file:f}));
+  inputEl.value=''; // מאפשר לבחור מחדש אותם קבצים אם צריך
+  pbRenderAttachList();
+}
+// מעלה קובץ בודד לדרייב ומחזיר את הכתובת שהתקבלה, או null אם נכשל
+async function pbUploadSingleFile_(set,seq,rowIndexFallback,file){
   try{
     const b64=await fileToB64(file);
     const up=await fetch(SCRIPT_URL,{
@@ -3491,13 +3563,23 @@ async function pbUploadReportFileIfNeeded_(set,seq,rowIndexFallback){
     });
     const uj=await up.json();
     if(uj.ok) return uj.fileUrl;
-    toast('⚠️ הרשומה נשמרה, אך העלאת הקובץ נכשלה: '+(uj.error||'לא ידוע'),'warn');
+    console.error('העלאת קובץ נכשלה:',file.name,uj.error);
     return null;
   }catch(e){
-    console.error('שגיאת העלאת קובץ לתכנון שלב ב:',e);
-    toast('⚠️ הרשומה נשמרה, אך הייתה שגיאת רשת בהעלאת הקובץ','warn');
+    console.error('שגיאת העלאת קובץ לתכנון שלב ב:',file.name,e);
     return null;
   }
+}
+// מעלה את כל הקבצים הממתינים ב-_pbeAttachments (type==='file'), ברצף אחד אחרי השני
+// (השרת מוסיף כל כתובת חדשה כשורה נפרדת לאותו תא, ולא דורס את הקודמות)
+async function pbUploadPendingFiles_(set,seq,rowIndexFallback){
+  const pending=_pbeAttachments.filter(a=>a.type==='file');
+  let failed=0;
+  for(const a of pending){
+    const url=await pbUploadSingleFile_(set,seq,rowIndexFallback,a.file);
+    if(url) failed+=0; else failed++;
+  }
+  return {total:pending.length,failed};
 }
 
 function pbReadForm(){
@@ -3527,7 +3609,14 @@ function pbReadForm(){
     execDate:isoToPbDate(execDateVal),
     execStatus:document.getElementById('pbeStatus').value,
     distDate:isoToPbDate(distDateVal),
-    reportLink:document.getElementById('pbeReportLink').value.trim(),
+    // אם נשאר טקסט לא-שמור בשדה "הוספת קישור" (המשתמש שכח ללחוץ ➕), מוסיפים אותו
+    // אוטומטית כצרופה נוספת כדי לא לאבד אותו. הערך הנשלח כולל רק צרופות מסוג "קישור/טקסט"
+    // שכבר ידועות עכשיו - קבצים ממתינים מועלים בנפרד ומתווספים לתא בשרת (ר' savePlanBEdit).
+    reportLink:(function(){
+      const leftover=document.getElementById('pbeReportLink').value.trim();
+      if(leftover){ _pbeAttachments.push({type:'link',label:leftover,value:leftover}); document.getElementById('pbeReportLink').value=''; pbRenderAttachList(); }
+      return _pbeAttachments.filter(a=>a.type==='link').map(a=>a.value).filter(Boolean).join('\n');
+    })(),
     distributed:document.getElementById('pbeDistributed').value,
   };
 }
@@ -3557,15 +3646,20 @@ async function savePlanBEdit(){
     const r=await fetch(SCRIPT_URL+'?action='+action+'&data='+encodeURIComponent(JSON.stringify(payload)));
     const j=await r.json();
     if(j.ok){
-      const fileInput=document.getElementById('pbeReportFile');
-      if(fileInput?.files[0]){
-        txt.textContent='מעלה קובץ לדרייב...';
-        showAppLoader('מעלה קובץ לדרייב...');
+      const pendingCount=_pbeAttachments.filter(a=>a.type==='file').length;
+      let uploadResult={total:0,failed:0};
+      if(pendingCount){
+        txt.textContent=`מעלה ${pendingCount} קבצים לדרייב...`;
+        showAppLoader(`מעלה ${pendingCount} קבצים לדרייב...`);
         const seqForUpload=_pbeIsNew?j.seq:set.data[_pbeIdx].seq;
         const rowIdxForUpload=_pbeIsNew?null:set.data[_pbeIdx].rowIndex;
-        await pbUploadReportFileIfNeeded_(set,seqForUpload,rowIdxForUpload);
+        uploadResult=await pbUploadPendingFiles_(set,seqForUpload,rowIdxForUpload);
       }
-      toast(_pbeIsNew?'✅ השורה נוספה לתכנון שלב ב\'':'✅ הפרטים עודכנו','ok');
+      if(uploadResult.failed){
+        toast(`⚠️ הרשומה נשמרה, אך ${uploadResult.failed} מתוך ${uploadResult.total} קבצים לא הועלו`,'warn');
+      } else {
+        toast(_pbeIsNew?'✅ השורה נוספה לתכנון שלב ב\'':'✅ הפרטים עודכנו','ok');
+      }
       closePlanBDetail();
       showAppLoader('מסנכרן נתונים...');
       await fetchPlanB(_pbeSetKey==='T'?'T':'B');
@@ -3617,59 +3711,9 @@ async function deletePlanBEdit(){
   }
 }
 
-// העברת שורת תכנון לגאנט – יוצרת בדיקה אמיתית בגיליון "בדיקות", בלי לשלוח זימון אוטומטית
-// (אם רוצים לשלוח זימון, עורכים את הבדיקה בגאנט ומוסיפים/שולחים משם באופן מכוון),
-// ומוחקת את השורה המקורית מגיליון התכנון כדי שלא תופיע בשני המקומות.
-async function transferPlanBToGantt(){
-  if(_pbeIdx<0) return;
-  const set=planBSets[_pbeSetKey];
-  const x=set.data[_pbeIdx];
-  const form=pbReadForm();
-  const execISO=document.getElementById('pbeExecDate').value;
-  if(!execISO){toast('יש להזין תאריך ביצוע לפני ההעברה לגאנט','warn');document.getElementById('pbeExecDate').focus();return;}
-  if(!form.building){toast('יש להזין מבנה לפני ההעברה לגאנט','warn');document.getElementById('pbeBuilding').focus();return;}
-  if(!confirm('הפעולה תיצור בדיקה חדשה בגאנט (בלי לשלוח זימון אוטומטית) ותסיר את השורה מהתכנון. זימון אפשר לשלוח מתוך הבדיקה בגאנט בכל שלב. להמשיך?')) return;
-
-  const btn=document.getElementById('pbeTransferBtn');
-  const txt=document.getElementById('pbeTransferBtnTxt');
-  try{
-    btn.classList.add('btn-spinning');
-    txt.textContent='מעביר לגאנט...';
-    showAppLoader('יוצר בדיקה בגאנט...');
-    ss('loading','מעביר...');
-
-    const addPayload=JSON.stringify({
-      date:execISO,
-      building:form.building, floor:form.floor||'1',
-      domain:form.domain||'כללי', subtype:form.subtype||'',
-      round:form.round||'', title:'', hours:'',
-      name:form.team||'',
-      email:'',  // בכוונה ריק — אין שליחת זימון אוטומטית בהעברה; שולחים ידנית מתוך הגאנט
-      status:form.execStatus||'טרם התחיל',
-      user:currentUser
-    });
-    const r1=await fetch(SCRIPT_URL+'?action=addRow&data='+encodeURIComponent(addPayload));
-    const j1=await r1.json();
-    if(!j1.ok){ toast('שגיאה ביצירת הבדיקה בגאנט: '+(j1.error||'לא ידוע'),'err'); return; }
-
-    showAppLoader('מסיר את השורה מהתכנון...');
-    await fetch(SCRIPT_URL+'?action=deletePlanBRow&data='+encodeURIComponent(JSON.stringify({rowIndex:x.rowIndex,seq:x.seq,user:currentUser,sheetName:set.sheetName})));
-
-    toast('✅ הבדיקה הועברה לגאנט (ללא זימון) · אפשר לשלוח זימון מתוך הבדיקה בגאנט','ok');
-    closePlanBDetail();
-    showAppLoader('מסנכרן נתונים...');
-    await sync();
-    await fetchPlanB(_pbeSetKey);
-    ss('ok','מחובר');
-  }catch(e){
-    console.error('שגיאת העברה לגאנט:',e);
-    ss('err','שגיאה');toast('שגיאת רשת - ההעברה נכשלה','err');
-  }finally{
-    btn.classList.remove('btn-spinning');
-    txt.textContent='📅 העבר לגאנט';
-    hideAppLoader();
-  }
-}
+// הערה: ההעברה לגאנט כבר לא ידנית - כל שורת תכנון עם תאריך ביצוע מסונכרנת אוטומטית
+// לגיליון "בדיקות" ע"י השרת (updatePlanB/addPlanBRow), בלי שליחת זימון מייל, ונשארת
+// מקושרת כך שעדכון עתידי של אותה שורה מתעדכן גם בגאנט, ומחיקת התאריך/השורה מסירה את התאום.
 
 async function openPlanB(setKey){
   const set=planBSets[setKey];
@@ -3880,7 +3924,7 @@ function renderPlanBList(setKey){
     const sortIc=(set.sortKey===col.key)?(set.sortDir===1?' ▲':' ▼'):'';
     const filterActive=!!set.filters[col.key];
     const panelOpen=_pbFilterOpen&&_pbFilterOpen.setKey===setKey&&_pbFilterOpen.colKey===col.key;
-    return `<th style="position:relative">
+    return `<th>
       <div class="pb-th">
         <span class="pb-th-label" onclick="pbSetSort('${setKey}','${col.key}')" title="מיון לפי ${col.label}">${col.label}<span class="pb-sort-ic">${sortIc}</span></span>
         <button type="button" class="pb-filter-btn${filterActive?' active':''}" onclick="pbToggleFilter('${setKey}','${col.key}',event)" title="סינון לפי ${col.label}">▾</button>
@@ -3892,6 +3936,7 @@ function renderPlanBList(setKey){
   if(!list.length){
     body.innerHTML=`<table class="pb-table"><thead>${theadHtml}</thead><tbody></tbody></table>
       <div class="planb-loading" style="color:var(--muted)">🔍 לא נמצאו רשומות תואמות לסינון שנבחר</div>`;
+    pbFitTableHeight(body);
     return;
   }
 
@@ -3926,7 +3971,30 @@ function renderPlanBList(setKey){
     <thead>${theadHtml}</thead>
     <tbody>${rowsHtml}</tbody>
   </table>`;
+  pbFitTableHeight(body);
 }
+
+// מגביל את גובה תיבת הטבלה (תכנון שלב ב'/תקשוב) כך שתמיד תסתיים בתוך גובה המסך הנראה,
+// כדי שהעמוד כולו לא יגלול (רק תוכן הטבלה גולל בתוכה) - כך שורת הכותרת עם המיון/הסינון
+// תמיד תישאר דבוקה ונראית, ולא "תיעלם" עם גלילת העמוד.
+function pbFitTableHeight(wrapEl){
+  if(!wrapEl) return;
+  requestAnimationFrame(()=>{
+    // חשוב: מחשבים לפי המיקום המוחלט של האלמנט בדף (לא תלוי במיקום הגלילה הנוכחי) -
+    // אחרת אם הייתה גלילה שיורית מטאב קודם, החישוב "מתנפח" ונדרשת גלילת עמוד נוספת,
+    // שגורמת לכל הכרטיס (כולל הכותרת ה"דביקה" בתוכו) לזוז מחוץ לתצוגה.
+    const absoluteTop=wrapEl.getBoundingClientRect().top+window.pageYOffset;
+    const bottomMargin=24; // שולי בטיחות מתחת לטבלה
+    const h=Math.max(220,window.innerHeight-absoluteTop-bottomMargin);
+    wrapEl.style.maxHeight=h+'px';
+  });
+}
+window.addEventListener('resize',()=>{
+  ['planBBody','planBBody2'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el&&el.offsetParent!==null) pbFitTableHeight(el);
+  });
+});
 
 function openImport(){
   const cleanUser=(currentUser||'').replace(/[\u200e\u200f\u202a-\u202e]/g,'').trim().toLowerCase();
@@ -3954,7 +4022,7 @@ function closeImport(){document.getElementById('impOverlay').classList.remove('o
 function downloadImpTemplate(){
   const ws=XLSX.utils.aoa_to_sheet([
     ['תאריך','מבנה','קומה','תחום','שעות','צוות'],
-    ['25/07/2026','10a','3','בדיקות','09:00-10:30','איציק דבוש'],
+    ['25/07/2026','10a','3','הבטחת איכות','09:00-10:30','איציק דבוש'],
     ['26/07/2026','10b','1','כללי','13:00-14:00','שמעון חג\'ג\', מיטל קראווני']
   ]);
   ws['!cols']=[{wch:12},{wch:8},{wch:6},{wch:12},{wch:13},{wch:30}];
@@ -4863,8 +4931,7 @@ function closeModal(){
 
 // ===== תתי-תחומים =====
 const SUBDOMAINS={
-  'מאפיינים':['מאפיינים'],
-  'מאיפנים':['מאיפנים'],
+  'אפיון':['אפיון'],
   'תפעול':['בינוי תומך תפעול','מערכות','בדיקות תפעוליות','הרצות תפעוליות'],
   'תקשוב':['פאסיבי','ביטחון','מולטימדיה','אמצעים ותקשורת','בינוי תומך תקשוב']
 };
@@ -5041,6 +5108,9 @@ function switchTab(id,el){
   document.querySelectorAll('.tc').forEach(t=>t.classList.remove('on'));
   el.classList.add('on');
   document.getElementById('tc'+id).classList.add('on');
+  // מתחילים מגלילה 0 לפני מדידת הגובה הפנוי לטבלאות תכנון שלב ב'/תקשוב,
+  // כדי שהחישוב לא יתבסס על מיקום גלילה שנשאר מטאב קודם
+  if(id==='P'||id==='Q') window.scrollTo(0,0);
   if(id==='L') renderL();
   if(id==='P') openPlanB('B');
   if(id==='Q') openPlanB('T');
@@ -5112,7 +5182,6 @@ const TOUR_STEPS=[
   {sel:'.btn-hdr-new', title:'＋ יצירת בדיקה חדשה', txt:'בוחרים תאריך, מבנה, קומה, תחום וצוות — והמערכת שומרת בשיטס ושולחת זימון ליומן של הצוות אוטומטית.'},
   {sel:'.mobile-view-toggle', title:'📅 שבוע או 📆 חודש', txt:'מחליפים בין תצוגת לוח שבועית לחודשית בלחיצה. כפתורי הניווט מתאימים את עצמם לתצוגה.'},
   {sel:'#weekCal', title:'🗓️ הלוח הראשי', txt:'לחיצה על ＋ ביום מוסיפה בדיקה לאותו תאריך. לחיצה על כרטיסיית בדיקה פותחת את הפרטים — משם אפשר לערוך, למחוק או לשלוח זימון מחדש.'},
-  {sel:'.btn-holo', title:'🔮 תצוגת אולוגרמה', txt:'תצוגה חיה של כל המבנים והקומות. לחיצה על קומה מציגה את הבדיקות שלה, ולחיצה על שם המבנה — את כל בדיקות המבנה, עבר ועתיד.'},
   {sel:'.mcal', title:'🗓️ לוח מיני', txt:'ניווט מהיר בין חודשים. נקודה כחולה מתחת ליום מסמנת שיש בו בדיקות, ו"חזרה להיום" מחזירה אותך מיד.'},
   {sel:'#tourBtn', title:'❓ צריך תזכורת?', txt:'ההדרכה הזו זמינה תמיד בכפתור הזה. בהצלחה! 🎉'}
 ];
