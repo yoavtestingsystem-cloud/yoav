@@ -1243,13 +1243,16 @@ body.admin-named .named-admin-only{display:inline-flex}
 /* ===== תכנון שלב ב' – טאב רשימה יפה (בסגנון גיליון) ===== */
 .planb-loading{padding:4rem 0;text-align:center;margin:auto;width:100%}
 
+.pb-survey-btn{background:var(--surface2);color:var(--text)}
+.pb-survey-btn.pb-survey-on{background:#fbbf24;color:#1e293b}
+.wrap.pb-wide{max-width:none}
 .pb-table-wrap{overflow:auto;border:1px solid var(--border);border-radius:10px;flex:1;width:100%;max-height:65vh}
 
 /* מיון וסינון לפי עמודה */
-.pb-th{display:flex;align-items:center;justify-content:space-between;gap:4px;cursor:pointer;user-select:none;white-space:nowrap}
-.pb-th-label{display:flex;align-items:center;gap:3px}
+.pb-th{display:flex;align-items:center;justify-content:space-between;gap:3px;cursor:pointer;user-select:none;white-space:normal}
+.pb-th-label{display:flex;align-items:center;gap:2px;line-height:1.2;min-width:0}
 .pb-sort-ic{font-size:9px;min-width:8px;display:inline-block}
-.pb-filter-btn{flex-shrink:0;background:rgba(255,255,255,.18);border:none;color:#fff;border-radius:5px;width:19px;height:19px;font-size:10px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.pb-filter-btn{flex-shrink:0;background:rgba(255,255,255,.18);border:none;color:#fff;border-radius:5px;width:16px;height:16px;font-size:9px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .pb-filter-btn:hover{background:rgba(255,255,255,.32)}
 .pb-filter-btn.active{background:#fbbf24;color:#1e293b}
 .pb-filter-panel{position:absolute;top:100%;right:0;margin-top:4px;background:#fff;color:var(--text);border:1px solid var(--border);border-radius:10px;box-shadow:var(--sh3);z-index:50;min-width:190px;max-width:260px;padding:8px;font-weight:400;font-size:12.5px;white-space:normal;text-transform:none;letter-spacing:normal}
@@ -1264,16 +1267,18 @@ body.admin-named .named-admin-only{display:inline-flex}
 .pb-fa-neutral:hover{background:var(--border)}
 .pb-fa-primary{background:var(--navy);color:#fff}
 .pb-fa-primary:hover{opacity:.9}
-.pb-table{border-collapse:separate;border-spacing:0;width:100%;min-width:1000px;font-size:12.5px}
+.pb-table{border-collapse:separate;border-spacing:0;width:100%;min-width:0;table-layout:auto;font-size:12.5px}
+.pb-table tbody td:nth-child(1),.pb-table tbody td:nth-child(2),.pb-table tbody td:nth-child(3),.pb-table tbody td:nth-child(6),.pb-table tbody td:nth-child(8),.pb-table tbody td:nth-child(10),.pb-table tbody td:nth-child(11),.pb-table tbody td:nth-child(12){white-space:nowrap}
+.pb-table thead th:last-child,.pb-table tbody td:last-child{width:1%;text-align:center}
 .pb-table thead th{
   position:sticky;top:0;z-index:5;background:var(--navy);color:#fff;
-  font-size:11px;font-weight:800;padding:10px 12px;text-align:right;white-space:nowrap;
+  font-size:11px;font-weight:800;padding:8px 5px;text-align:right;white-space:normal;line-height:1.2;vertical-align:middle;
   border-left:1px solid rgba(255,255,255,.12);
 }
 .pb-table thead th:first-child{border-left:none}
 .pb-table tbody td{
-  padding:9px 12px;border-left:1px solid var(--border);border-bottom:1px solid var(--border);
-  white-space:nowrap;color:var(--text);
+  padding:8px 6px;border-left:1px solid var(--border);border-bottom:1px solid var(--border);
+  color:var(--text);
 }
 .pb-table tbody td:first-child{border-left:none}
 .pb-table tbody tr:nth-child(even){background:var(--surface2)}
@@ -1831,6 +1836,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
           <span class="lsearch-ic">🔎</span>
           <span id="planBFilterSummary" style="color:var(--muted);font-size:13px">לחץ על ▾ בראש כל עמודה כדי למיין או לסנן</span>
         </div>
+        <button class="lexport-btn pb-survey-btn" id="pbSurveyBtn_B" onclick="pbToggleSurvey('B')" title="הצג רק משימות שבשמן 'סקר'">📋 סקר</button>
         <button class="lexport-btn" style="background:var(--surface2);color:var(--text)" onclick="pbClearAllFilters('B')" title="נקה את כל הסינונים בטבלה זו">🧹 נקה סינון</button>
         <div class="lcount" id="planBSub"></div>
         <button class="lexport-btn" onclick="openNewPlanBRow('B')" title="הוספת שורת תכנון חדשה">➕ הוספת שורה</button>
@@ -1850,6 +1856,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
           <span class="lsearch-ic">🔎</span>
           <span id="planBFilterSummary2" style="color:var(--muted);font-size:13px">לחץ על ▾ בראש כל עמודה כדי למיין או לסנן</span>
         </div>
+        <button class="lexport-btn pb-survey-btn" id="pbSurveyBtn_T" onclick="pbToggleSurvey('T')" title="הצג רק משימות שבשמן 'סקר'">📋 סקר</button>
         <button class="lexport-btn" style="background:var(--surface2);color:var(--text)" onclick="pbClearAllFilters('T')" title="נקה את כל הסינונים בטבלה זו">🧹 נקה סינון</button>
         <div class="lcount" id="planBSub2"></div>
         <button class="lexport-btn" onclick="openNewPlanBRow('T')" title="הוספת שורת תכנון חדשה">➕ הוספת שורה</button>
@@ -3354,8 +3361,8 @@ async function syncAllPlanBToGantt(){
 // ===== תכנון שלב ב' (רגיל + תקשוב) – מצב כללי לכמה גיליונות =====
 let planBSets={
   // ברירת מחדל: מיון לפי תאריך ביצוע מהקרוב לרחוק, שורות ריקות בסוף - עד שינוי ידני ע"י לחיצה על כותרת עמודה
-  B:{data:[], loaded:false, sheetName:'תכנון שלב ב', bodyId:'planBBody', subId:'planBSub', summaryId:'planBFilterSummary', sortKey:'execDate', sortDir:1, filters:{}},
-  T:{data:[], loaded:false, sheetName:'תכנון שלב ב - תקשוב', bodyId:'planBBody2', subId:'planBSub2', summaryId:'planBFilterSummary2', sortKey:'execDate', sortDir:1, filters:{}}
+  B:{data:[], loaded:false, sheetName:'תכנון שלב ב', bodyId:'planBBody', subId:'planBSub', summaryId:'planBFilterSummary', sortKey:'execDate', sortDir:1, filters:{}, surveyOnly:false},
+  T:{data:[], loaded:false, sheetName:'תכנון שלב ב - תקשוב', bodyId:'planBBody2', subId:'planBSub2', summaryId:'planBFilterSummary2', sortKey:'execDate', sortDir:1, filters:{}, surveyOnly:false}
 };
 const PLANB_DC={
   'אפיון':'#7c3aed', 'תפעול':'#f97316', 'הנדסי':'#0891b2',
@@ -3876,6 +3883,12 @@ function pbApplyFilter(setKey,colKey){
   _pbFilterOpen=null;
   renderPlanBList(setKey);
 }
+function pbToggleSurvey(setKey){
+  const set=planBSets[setKey];
+  set.surveyOnly=!set.surveyOnly;
+  _pbFilterOpen=null;
+  renderPlanBList(setKey);
+}
 function pbCancelFilterPanel(){
   const sk=_pbFilterOpen?_pbFilterOpen.setKey:null;
   _pbFilterOpen=null;
@@ -3884,6 +3897,7 @@ function pbCancelFilterPanel(){
 function pbClearAllFilters(setKey){
   const set=planBSets[setKey];
   set.filters={};
+  set.surveyOnly=false;
   set.sortKey='';
   set.sortDir=1;
   _pbFilterOpen=null;
@@ -3904,6 +3918,9 @@ function renderPlanBList(setKey){
   const summaryEl=document.getElementById(set.summaryId);
 
   let list=set.data;
+  if(set.surveyOnly) list=list.filter(x=>/סקר/.test(x.subtype||'')||/סקר/.test(x.domain||''));
+  const surveyBtn=document.getElementById('pbSurveyBtn_'+setKey);
+  if(surveyBtn) surveyBtn.classList.toggle('pb-survey-on',!!set.surveyOnly);
   const activeFilterKeys=Object.keys(set.filters);
   if(activeFilterKeys.length){
     list=list.filter(x=>activeFilterKeys.every(colKey=>set.filters[colKey].has(pbDisplayVal_(x,colKey))));
@@ -3915,8 +3932,8 @@ function renderPlanBList(setKey){
 
   sub.textContent=`${list.length} רשומות מתוך ${set.data.length}`;
   if(summaryEl){
-    summaryEl.textContent=activeFilterKeys.length
-      ? `🔎 מסונן לפי ${activeFilterKeys.length} עמוד(ות) — ${list.length} מתוך ${set.data.length}`
+    summaryEl.textContent=(activeFilterKeys.length||set.surveyOnly)
+      ? `🔎 ${set.surveyOnly?'מוצגים רק סקרים · ':''}${activeFilterKeys.length?`מסונן לפי ${activeFilterKeys.length} עמוד(ות) · `:''}${list.length} מתוך ${set.data.length}`
       : 'לחץ על ▾ בראש כל עמודה כדי למיין או לסנן';
   }
 
@@ -5111,14 +5128,16 @@ function switchTab(id,el){
   // מתחילים מגלילה 0 לפני מדידת הגובה הפנוי לטבלאות תכנון שלב ב'/תקשוב,
   // כדי שהחישוב לא יתבסס על מיקום גלילה שנשאר מטאב קודם
   if(id==='P'||id==='Q') window.scrollTo(0,0);
+  const wrapEl=document.querySelector('.wrap');
+  if(wrapEl) wrapEl.classList.toggle('pb-wide',id==='P'||id==='Q');
   if(id==='L') renderL();
   if(id==='P') openPlanB('B');
   if(id==='Q') openPlanB('T');
 }
 
-// ── AUTO LOGOUT אחרי חצי שעה חוסר פעילות ──
+// ── AUTO LOGOUT אחרי שעה חוסר פעילות ──
 let _logoutTimer=null;
-const LOGOUT_MS=30*60*1000; // 30 דקות
+const LOGOUT_MS=60*60*1000; // שעה
 
 function resetLogoutTimer(){
   clearTimeout(_logoutTimer);
@@ -5292,16 +5311,17 @@ function endTour(){
   try{localStorage.setItem('yoavTourDone','1');}catch(e){}
 }
 
-// ===== רענון נתונים אוטומטי כל 5 דקות (בלי לצאת מהאתר) =====
+// ===== רענון נתונים אוטומטי כל שעה (בלי לצאת מהאתר) =====
 function scheduleAutoRefresh(){
-  const AUTO_REFRESH_MS=5*60*1000;  // 5 דקות
+  const AUTO_REFRESH_MS=60*60*1000;  // שעה
   setInterval(function(){
     if(!currentUser) return;  // לא מחובר – אין מה לרענן
     const openOverlays=['moverlay','editOverlay','distOverlay','impOverlay','plusMenuOverlay',
-      'docprevOverlay','hfpOverlay','holoOverlay','dayPopOverlay','ppopOverlay','dpopOverlay']
+      'planBDetailOverlay','docprevOverlay','hfpOverlay','holoOverlay','dayPopOverlay','ppopOverlay','dpopOverlay']
       .some(id=>{const el=document.getElementById(id);return el&&el.classList.contains('on');});
     if(openOverlays) return;  // יש חלון פתוח – לא נוגעים כדי לא לאבד מידע, ננסה שוב בפעם הבאה
     sync();
+    ['B','T'].forEach(k=>{ if(planBSets[k].loaded) fetchPlanB(k); });
   },AUTO_REFRESH_MS);
 }
 if(window.self===window.top) scheduleAutoRefresh();
