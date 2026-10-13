@@ -1736,8 +1736,9 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
     <div class="tabs">
       <button class="tab on" onclick="switchTab('G',this)">📅 גאנט</button>
       <button class="tab" onclick="switchTab('L',this)">📋 רשימה</button>
-      <button class="tab" onclick="switchTab('P',this)">📐 תכנון שלב ב'</button>
-      <button class="tab" onclick="switchTab('Q',this)">🔧 תכנון שלב ב' תקשוב</button>
+      <button class="tab" onclick="switchTab('P',this)">📐 תכנון שלב ב' - סבב 1</button>
+      <button class="tab" onclick="switchTab('R',this)">📐 תכנון שלב ב' - סבב 2</button>
+      <button class="tab" onclick="switchTab('Q',this)">🔧 תכנון שלב ב' - תקשוב</button>
     </div>
   </div>
 
@@ -1842,6 +1843,26 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
         <button class="lexport-btn" onclick="openNewPlanBRow('B')" title="הוספת שורת תכנון חדשה">➕ הוספת שורה</button>
       </div>
       <div class="pb-table-wrap" id="planBBody">
+        <div class="planb-loading">
+          <div class="app-loader-spin" style="width:40px;height:40px;border-width:4px;margin:0 auto"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tc" id="tcR">
+    <div class="lcard">
+      <div class="ltoolbar">
+        <div class="lsearch-wrap" style="flex:1;min-width:0">
+          <span class="lsearch-ic">🔎</span>
+          <span id="planBFilterSummary3" style="color:var(--muted);font-size:13px">לחץ על ▾ בראש כל עמודה כדי למיין או לסנן</span>
+        </div>
+        <button class="lexport-btn pb-survey-btn" id="pbSurveyBtn_B2" onclick="pbToggleSurvey('B2')" title="הצג רק משימות שבשמן 'סקר'">📋 סקר</button>
+        <button class="lexport-btn" style="background:var(--surface2);color:var(--text)" onclick="pbClearAllFilters('B2')" title="נקה את כל הסינונים בטבלה זו">🧹 נקה סינון</button>
+        <div class="lcount" id="planBSub3"></div>
+        <button class="lexport-btn" onclick="openNewPlanBRow('B2')" title="הוספת שורת תכנון חדשה">➕ הוספת שורה</button>
+      </div>
+      <div class="pb-table-wrap" id="planBBody3">
         <div class="planb-loading">
           <div class="app-loader-spin" style="width:40px;height:40px;border-width:4px;margin:0 auto"></div>
         </div>
@@ -2284,7 +2305,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
 
 <script>
 // ============================================================
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzvCqGC5sRJ3VqECjUjorWypYgUMHa_Lu-ytCXhkxBVGoFMk2dvoubQM2tznOij_8FLpw/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbycJxs-j6yFOwcVeoSUhMp5o6mk6qKImK2pBOqnKBwuffHPUoUQHacTKsJpZ362HFhV/exec';
 // ============================================================
 
 
@@ -3340,8 +3361,9 @@ async function syncAllPlanBToGantt(){
       toast(`✅ סונכרנו ${j.synced} שורות לגאנט`,'ok');
       showAppLoader('מסנכרן נתונים...');
       await sync();
-      planBSets.B.loaded=false; planBSets.T.loaded=false;
+      planBSets.B.loaded=false; planBSets.B2.loaded=false; planBSets.T.loaded=false;
       await fetchPlanB('B');
+      await fetchPlanB('B2');
       await fetchPlanB('T');
     } else {
       toast('שגיאה: '+(j.error||'לא ידוע'),'err');
@@ -3361,7 +3383,8 @@ async function syncAllPlanBToGantt(){
 // ===== תכנון שלב ב' (רגיל + תקשוב) – מצב כללי לכמה גיליונות =====
 let planBSets={
   // ברירת מחדל: מיון לפי תאריך ביצוע מהקרוב לרחוק, שורות ריקות בסוף - עד שינוי ידני ע"י לחיצה על כותרת עמודה
-  B:{data:[], loaded:false, sheetName:'תכנון שלב ב', bodyId:'planBBody', subId:'planBSub', summaryId:'planBFilterSummary', sortKey:'execDate', sortDir:1, filters:{}, surveyOnly:false},
+  B:{data:[], loaded:false, sheetName:'תכנון שלב ב סבב 1', bodyId:'planBBody', subId:'planBSub', summaryId:'planBFilterSummary', sortKey:'execDate', sortDir:1, filters:{}, surveyOnly:false},
+  B2:{data:[], loaded:false, sheetName:'תכנון שלב ב סבב 2', bodyId:'planBBody3', subId:'planBSub3', summaryId:'planBFilterSummary3', sortKey:'execDate', sortDir:1, filters:{}, surveyOnly:false},
   T:{data:[], loaded:false, sheetName:'תכנון שלב ב - תקשוב', bodyId:'planBBody2', subId:'planBSub2', summaryId:'planBFilterSummary2', sortKey:'execDate', sortDir:1, filters:{}, surveyOnly:false}
 };
 const PLANB_DC={
@@ -3434,6 +3457,9 @@ function pbDateInputChanged(field,el){
   // המשתמש עצמו שינה את השדה (כולל ניקוי ידני) - מעדכנים את הגיבוי כך שנכבד את הבחירה שלו
   _pbeDateSnapshot[field]=el.value;
 }
+function pbSetSuffix(setKey){
+  return setKey==='T'?' – תקשוב':(setKey==='B2'?' – סבב 2':' – סבב 1');
+}
 function showPlanBDetail(setKey,idx){
   const set=planBSets[setKey];
   const x=set.data[idx];
@@ -3441,7 +3467,7 @@ function showPlanBDetail(setKey,idx){
   _pbeSetKey=setKey;
   _pbeIdx=idx;
   _pbeIsNew=false;
-  document.getElementById('pbeModalTitle').textContent="📐 פרטי תכנון שלב ב'"+(setKey==='T'?" – תקשוב":'');
+  document.getElementById('pbeModalTitle').textContent="📐 פרטי תכנון שלב ב'"+pbSetSuffix(setKey);
   document.getElementById('pbeSeqBadge').textContent=x.seq?`מס"ד ${x.seq}`:'';
   document.getElementById('pbeDeleteBtn').style.display='';
   document.getElementById('pbeBuilding').value=x.building||'';
@@ -3471,7 +3497,7 @@ function openNewPlanBRow(setKey){
   _pbeSetKey=setKey;
   _pbeIdx=-1;
   _pbeIsNew=true;
-  document.getElementById('pbeModalTitle').textContent="➕ שורת תכנון חדשה"+(setKey==='T'?" – תקשוב":'');
+  document.getElementById('pbeModalTitle').textContent="➕ שורת תכנון חדשה"+pbSetSuffix(setKey);
   const nextSeq=Math.max(0,...planBSets[setKey].data.map(x=>Number(x.seq)||0))+1;
   document.getElementById('pbeSeqBadge').textContent=`מס"ד ${nextSeq} (יוקצה אוטומטית בשמירה)`;
   document.getElementById('pbeDeleteBtn').style.display='none';
@@ -3669,7 +3695,7 @@ async function savePlanBEdit(){
       }
       closePlanBDetail();
       showAppLoader('מסנכרן נתונים...');
-      await fetchPlanB(_pbeSetKey==='T'?'T':'B');
+      await fetchPlanB(_pbeSetKey);
     } else {
       toast('שגיאה: '+(j.error||'לא ידוע'),'err');
     }
@@ -4007,7 +4033,7 @@ function pbFitTableHeight(wrapEl){
   });
 }
 window.addEventListener('resize',()=>{
-  ['planBBody','planBBody2'].forEach(id=>{
+  ['planBBody','planBBody3','planBBody2'].forEach(id=>{
     const el=document.getElementById(id);
     if(el&&el.offsetParent!==null) pbFitTableHeight(el);
   });
@@ -5127,11 +5153,12 @@ function switchTab(id,el){
   document.getElementById('tc'+id).classList.add('on');
   // מתחילים מגלילה 0 לפני מדידת הגובה הפנוי לטבלאות תכנון שלב ב'/תקשוב,
   // כדי שהחישוב לא יתבסס על מיקום גלילה שנשאר מטאב קודם
-  if(id==='P'||id==='Q') window.scrollTo(0,0);
+  if(id==='P'||id==='Q'||id==='R') window.scrollTo(0,0);
   const wrapEl=document.querySelector('.wrap');
-  if(wrapEl) wrapEl.classList.toggle('pb-wide',id==='P'||id==='Q');
+  if(wrapEl) wrapEl.classList.toggle('pb-wide',id==='P'||id==='Q'||id==='R');
   if(id==='L') renderL();
   if(id==='P') openPlanB('B');
+  if(id==='R') openPlanB('B2');
   if(id==='Q') openPlanB('T');
 }
 
@@ -5321,7 +5348,7 @@ function scheduleAutoRefresh(){
       .some(id=>{const el=document.getElementById(id);return el&&el.classList.contains('on');});
     if(openOverlays) return;  // יש חלון פתוח – לא נוגעים כדי לא לאבד מידע, ננסה שוב בפעם הבאה
     sync();
-    ['B','T'].forEach(k=>{ if(planBSets[k].loaded) fetchPlanB(k); });
+    ['B','B2','T'].forEach(k=>{ if(planBSets[k].loaded) fetchPlanB(k); });
   },AUTO_REFRESH_MS);
 }
 if(window.self===window.top) scheduleAutoRefresh();
