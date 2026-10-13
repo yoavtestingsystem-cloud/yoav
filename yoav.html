@@ -1245,7 +1245,16 @@ body.admin-named .named-admin-only{display:inline-flex}
 
 .pb-survey-btn{background:var(--surface2);color:var(--text)}
 .pb-survey-btn.pb-survey-on{background:#fbbf24;color:#1e293b}
-.wrap.pb-wide{max-width:none}
+.wrap.pb-wide{max-width:none;padding-top:.6rem;padding-bottom:.5rem}
+.wrap.pb-wide .stats{display:none}
+.pb-stats{display:flex;gap:10px;margin-bottom:8px;flex-wrap:wrap}
+.pb-stat{flex:0 1 240px;min-width:170px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px 14px;display:flex;align-items:center;gap:12px;box-shadow:var(--sh)}
+.pb-stat-val{font-size:24px;font-weight:800;line-height:1.1;color:var(--navy)}
+.pb-stat-val.done{color:#059669}
+.pb-stat-lbl{font-size:12px;color:var(--muted);font-weight:600;line-height:1.25}
+.pb-stat-pct{font-size:11px;color:#059669;font-weight:700}
+.wrap.pb-wide .tabs-bar{margin-bottom:.5rem}
+.wrap.pb-wide .ltoolbar{padding-top:8px;padding-bottom:8px}
 .pb-table-wrap{overflow:auto;border:1px solid var(--border);border-radius:10px;flex:1;width:100%;max-height:65vh}
 
 /* מיון וסינון לפי עמודה */
@@ -1736,10 +1745,10 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
     <div class="tabs">
       <button class="tab on" onclick="switchTab('G',this)">📅 גאנט</button>
       <button class="tab" onclick="switchTab('L',this)">📋 רשימה</button>
-      <button class="tab" onclick="switchTab('P',this)">📐 תכנון שלב ב' - סבב 1</button>
-      <button class="tab" onclick="switchTab('R',this)">📐 תכנון שלב ב' - סבב 2</button>
+      <button class="tab" onclick="switchTab('P',this)">📐 תכנון מבנים שלב ב' - סבב 1</button>
+      <button class="tab" onclick="switchTab('R',this)">📐 תכנון מבנים שלב ב' - סבב 2</button>
       <button class="tab" onclick="switchTab('Q',this)">🔧 תכנון שלב ב' - תקשוב</button>
-      <button class="tab" onclick="switchTab('S',this)">תוכנית השלמה</button>
+      <button class="tab" onclick="switchTab('S',this)">תכנון מבנים שלב א'</button>
     </div>
   </div>
 
@@ -1832,6 +1841,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
   </div>
 
   <div class="tc" id="tcP">
+    <div class="pb-stats" id="pbStats_B"></div>
     <div class="lcard">
       <div class="ltoolbar">
         <div class="lsearch-wrap" style="flex:1;min-width:0">
@@ -1852,6 +1862,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
   </div>
 
   <div class="tc" id="tcR">
+    <div class="pb-stats" id="pbStats_B2"></div>
     <div class="lcard">
       <div class="ltoolbar">
         <div class="lsearch-wrap" style="flex:1;min-width:0">
@@ -1872,6 +1883,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
   </div>
 
   <div class="tc" id="tcQ">
+    <div class="pb-stats" id="pbStats_T"></div>
     <div class="lcard">
       <div class="ltoolbar">
         <div class="lsearch-wrap" style="flex:1;min-width:0">
@@ -1892,6 +1904,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
   </div>
 
   <div class="tc" id="tcS">
+    <div class="pb-stats" id="pbStats_C"></div>
     <div class="lcard">
       <div class="ltoolbar">
         <div class="lsearch-wrap" style="flex:1;min-width:0">
@@ -2326,7 +2339,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
 
 <script>
 // ============================================================
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwdOJ4EkLsYePRfzgms33U4CFp8kq0SjKjiApM3zqHDByn_5h-EVtUXu_iNo1Bt4gughQ/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyWyTB6CoybTsnV3rC6kNE6nu3Y3N9FqFZ3iOwLKYcWgXDuiwRULYTkvgFE7KD9Cfk6Ow/exec';
 // ============================================================
 
 
@@ -3404,10 +3417,10 @@ async function syncAllPlanBToGantt(){
 // ===== תכנון שלב ב' (רגיל + תקשוב) – מצב כללי לכמה גיליונות =====
 let planBSets={
   // ברירת מחדל: מיון לפי תאריך ביצוע מהקרוב לרחוק, שורות ריקות בסוף - עד שינוי ידני ע"י לחיצה על כותרת עמודה
-  B:{data:[], loaded:false, sheetName:'תכנון שלב ב סבב 1', bodyId:'planBBody', subId:'planBSub', summaryId:'planBFilterSummary', sortKey:'execDate', sortDir:1, filters:{}, surveyOnly:false},
-  B2:{data:[], loaded:false, sheetName:'תכנון שלב ב סבב 2', bodyId:'planBBody3', subId:'planBSub3', summaryId:'planBFilterSummary3', sortKey:'execDate', sortDir:1, filters:{}, surveyOnly:false},
-  C:{data:[], loaded:false, sheetName:'תוכנית השלמה', bodyId:'planBBody4', subId:'planBSub4', summaryId:'planBFilterSummary4', sortKey:'execDate', sortDir:1, filters:{}, surveyOnly:false},
-  T:{data:[], loaded:false, sheetName:'תכנון שלב ב - תקשוב', bodyId:'planBBody2', subId:'planBSub2', summaryId:'planBFilterSummary2', sortKey:'execDate', sortDir:1, filters:{}, surveyOnly:false}
+  B:{data:[], loaded:false, sheetName:'תכנון שלב ב סבב 1', bodyId:'planBBody', subId:'planBSub', summaryId:'planBFilterSummary', sortKey:'building', sortDir:1, filters:{}, surveyOnly:false},
+  B2:{data:[], loaded:false, sheetName:'תכנון שלב ב סבב 2', bodyId:'planBBody3', subId:'planBSub3', summaryId:'planBFilterSummary3', sortKey:'building', sortDir:1, filters:{}, surveyOnly:false},
+  C:{data:[], loaded:false, sheetName:'תוכנית השלמה', bodyId:'planBBody4', subId:'planBSub4', summaryId:'planBFilterSummary4', sortKey:'building', sortDir:1, filters:{}, surveyOnly:false},
+  T:{data:[], loaded:false, sheetName:'תכנון שלב ב - תקשוב', bodyId:'planBBody2', subId:'planBSub2', summaryId:'planBFilterSummary2', sortKey:'building', sortDir:1, filters:{}, surveyOnly:false}
 };
 const PLANB_DC={
   'אפיון':'#7c3aed', 'תפעול':'#f97316', 'הנדסי':'#0891b2',
@@ -3480,7 +3493,7 @@ function pbDateInputChanged(field,el){
   _pbeDateSnapshot[field]=el.value;
 }
 function pbSetSuffix(setKey){
-  return setKey==='T'?' – תקשוב':(setKey==='B2'?' – סבב 2':(setKey==='C'?' – תוכנית השלמה':' – סבב 1'));
+  return setKey==='T'?' – תקשוב':(setKey==='B2'?' – סבב 2':(setKey==='C'?'':' – סבב 1'));
 }
 function showPlanBDetail(setKey,idx){
   const set=planBSets[setKey];
@@ -3489,9 +3502,9 @@ function showPlanBDetail(setKey,idx){
   _pbeSetKey=setKey;
   _pbeIdx=idx;
   _pbeIsNew=false;
-  document.getElementById('pbeModalTitle').textContent=(setKey==='C'?"📐 פרטי תוכנית השלמה":"📐 פרטי תכנון שלב ב'"+pbSetSuffix(setKey));
+  document.getElementById('pbeModalTitle').textContent=(setKey==='C'?"📐 פרטי תכנון מבנים שלב א'":"📐 פרטי תכנון מבנים שלב ב'"+pbSetSuffix(setKey));
   document.getElementById('pbeSeqBadge').textContent=x.seq?`מס"ד ${x.seq}`:'';
-  document.getElementById('pbeDeleteBtn').style.display='';
+  document.getElementById('pbeDeleteBtn').style.display='flex';
   document.getElementById('pbeBuilding').value=x.building||'';
   document.getElementById('pbeFloor').value=x.floor||'';
   pbSelSetWithCustom('pbeDomain',x.domain);
@@ -3519,7 +3532,7 @@ function openNewPlanBRow(setKey){
   _pbeSetKey=setKey;
   _pbeIdx=-1;
   _pbeIsNew=true;
-  document.getElementById('pbeModalTitle').textContent=(setKey==='C'?"➕ שורה חדשה בתוכנית השלמה":"➕ שורת תכנון חדשה"+pbSetSuffix(setKey));
+  document.getElementById('pbeModalTitle').textContent=(setKey==='C'?"➕ שורה חדשה בתכנון מבנים שלב א'":"➕ שורת תכנון חדשה"+pbSetSuffix(setKey));
   const nextSeq=Math.max(0,...planBSets[setKey].data.map(x=>Number(x.seq)||0))+1;
   document.getElementById('pbeSeqBadge').textContent=`מס"ד ${nextSeq} (יוקצה אוטומטית בשמירה)`;
   document.getElementById('pbeDeleteBtn').style.display='none';
@@ -3732,11 +3745,31 @@ async function savePlanBEdit(){
   }
 }
 
+// חלון אישור פנימי באתר (במקום confirm של הדפדפן, שיכול להיחסם בשקט ואז "המחיקה לא עושה כלום")
+function appConfirm(msg,okLabel){
+  return new Promise(resolve=>{
+    const ov=document.createElement('div');
+    ov.style.cssText='position:fixed;inset:0;background:rgba(10,20,40,.55);z-index:100000;display:flex;align-items:center;justify-content:center;padding:16px';
+    ov.innerHTML=`<div style="background:#fff;border-radius:16px;max-width:420px;width:100%;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.35);font-family:'Heebo',sans-serif;text-align:right;direction:rtl">
+      <div style="font-size:16px;font-weight:700;line-height:1.5;color:#14213D;margin-bottom:20px"></div>
+      <div style="display:flex;gap:10px">
+        <button type="button" data-ok style="flex:1;padding:12px;border:none;border-radius:10px;background:#b91c1c;color:#fff;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit"></button>
+        <button type="button" data-no style="flex:1;padding:12px;border:none;border-radius:10px;background:#e2e8f0;color:#14213D;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit">ביטול</button>
+      </div></div>`;
+    ov.firstElementChild.firstElementChild.textContent=msg;
+    ov.querySelector('[data-ok]').textContent=okLabel||'אישור';
+    const done=v=>{ov.remove();resolve(v);};
+    ov.querySelector('[data-ok]').onclick=()=>done(true);
+    ov.querySelector('[data-no]').onclick=()=>done(false);
+    ov.addEventListener('click',e=>{if(e.target===ov)done(false);});
+    document.body.appendChild(ov);
+  });
+}
 async function deletePlanBEdit(){
   if(_pbeIdx<0) return;
   const set=planBSets[_pbeSetKey];
   const x=set.data[_pbeIdx];
-  if(!confirm(`למחוק את שורת התכנון של מבנה ${x.building||'—'} קומה ${x.floor||'—'}?`)) return;
+  if(!(await appConfirm(`למחוק את שורת התכנון של מבנה ${x.building||'—'} קומה ${x.floor||'—'}?`,'🗑️ מחק'))) return;
 
   const btn=document.getElementById('pbeDeleteBtn');
   const txt=document.getElementById('pbeDeleteBtnTxt');
@@ -3748,12 +3781,18 @@ async function deletePlanBEdit(){
     const r=await fetch(SCRIPT_URL+'?action=deletePlanBRow&data='+encodeURIComponent(JSON.stringify({rowIndex:x.rowIndex,seq:x.seq,user:currentUser,sheetName:set.sheetName})));
     const j=await r.json();
     if(j.ok){
-      toast('🗑️ השורה נמחקה','warn');
+      const delSeq=String(x.seq||''), delKey=_pbeSetKey;
       closePlanBDetail();
       showAppLoader('מסנכרן נתונים...');
-      await fetchPlanB(_pbeSetKey);
+      await fetchPlanB(delKey);
+      const stillThere=delSeq&&planBSets[delKey].data.some(r=>String(r.seq)===delSeq);
+      if(stillThere){
+        toast(`⚠️ השרת דיווח שנמחקה שורה ${j.deletedRow||'?'} בגיליון "${j.sheet||set.sheetName}", אבל מס"ד ${delSeq} עדיין מופיע. ייתכן שיש בגיליון שורות כפולות עם אותו מס"ד.`,'err');
+      } else {
+        toast(`🗑️ נמחקה שורה ${j.deletedRow||''} (מס"ד ${delSeq}) מהגיליון "${j.sheet||set.sheetName}"`,'warn');
+      }
     } else {
-      toast('שגיאה: '+(j.error||'לא ידוע'),'err');
+      toast('שגיאה במחיקה: '+(j.error||'לא ידוע'),'err');
     }
     ss('ok','מחובר');
   }catch(e){
@@ -3856,6 +3895,19 @@ function pbColCompare(a,b,col){
   return s1.localeCompare(s2,'he',{numeric:true,sensitivity:'base'});
 }
 
+function pbFloorCompare(a,b){
+  const f1=String(a.floor||'').trim(), f2=String(b.floor||'').trim();
+  const n1=f1===''?NaN:Number(f1), n2=f2===''?NaN:Number(f2);
+  const ok1=!isNaN(n1), ok2=!isNaN(n2);
+  if(ok1&&ok2) return n1-n2;
+  if(ok1) return -1;
+  if(ok2) return 1;
+  if(!f1&&!f2) return 0;
+  if(!f1) return 1;
+  if(!f2) return -1;
+  return f1.localeCompare(f2,'he',{numeric:true,sensitivity:'base'});
+}
+
 function pbUniqueValues(setKey,colKey){
   const set=planBSets[setKey];
   const vals=new Set();
@@ -3946,7 +3998,7 @@ function pbClearAllFilters(setKey){
   const set=planBSets[setKey];
   set.filters={};
   set.surveyOnly=false;
-  set.sortKey='';
+  set.sortKey='building';
   set.sortDir=1;
   _pbFilterOpen=null;
   renderPlanBList(setKey);
@@ -3975,10 +4027,22 @@ function renderPlanBList(setKey){
   }
   if(set.sortKey){
     const col=PB_COLUMNS.find(c=>c.key===set.sortKey);
-    if(col) list=list.slice().sort((a,b)=>pbColCompare(a,b,col)*set.sortDir);
+    if(col&&col.key==='building'){
+      // מיון לפי מבנה, ובתוך כל מבנה לפי קומה בסדר עולה (שליליות -> 0 -> חיוביות, ואחריהן קומות שאינן מספר)
+      list=list.slice().sort((a,b)=>(pbColCompare(a,b,col)||pbFloorCompare(a,b)||(Number(a.seq)||0)-(Number(b.seq)||0))*set.sortDir);
+    } else if(col) list=list.slice().sort((a,b)=>pbColCompare(a,b,col)*set.sortDir);
   }
 
   sub.textContent=`${list.length} רשומות מתוך ${set.data.length}`;
+  const statsEl=document.getElementById('pbStats_'+setKey);
+  if(statsEl){
+    const total=set.data.length;
+    const done=set.data.filter(x=>/^בוצע/.test(String(x.execStatus||'').trim())).length;
+    const pct=total?Math.round(done*100/total):0;
+    statsEl.innerHTML=`
+      <div class="pb-stat"><div class="pb-stat-val">${total}</div><div class="pb-stat-lbl">סה"כ בדיקות</div></div>
+      <div class="pb-stat"><div class="pb-stat-val done">${done}</div><div class="pb-stat-lbl">בוצעו עד היום<div class="pb-stat-pct">${pct}% מכלל הבדיקות</div></div></div>`;
+  }
   if(summaryEl){
     summaryEl.textContent=(activeFilterKeys.length||set.surveyOnly)
       ? `🔎 ${set.surveyOnly?'מוצגים רק סקרים · ':''}${activeFilterKeys.length?`מסונן לפי ${activeFilterKeys.length} עמוד(ות) · `:''}${list.length} מתוך ${set.data.length}`
@@ -4019,7 +4083,7 @@ function renderPlanBList(setKey){
     return `<tr class="pb-row${isSurvey?' pb-row-survey':''}" style="animation-delay:${Math.min(i*.02,.35)}s" onclick="showPlanBDetail('${setKey}',${realIdx})" title="${isSurvey?'סקר · ':''}לחץ לצפייה ועריכה">
       <td class="pb-seq-cell">${x.seq||'—'}</td>
       <td class="pb-bld-cell">${x.building||'—'}</td>
-      <td>${x.floor||'—'}</td>
+      <td><span dir="ltr" style="unicode-bidi:isolate">${x.floor||'—'}</span></td>
       <td>${x.domain?`<span class="pb-domain-badge" style="background:${planBDomainColor(x.domain)}">${x.domain}</span>`:'<span class="pb-empty-cell">—</span>'}</td>
       <td>${ec(x.subtype)}</td>
       <td>${ec(x.round)}</td>
@@ -4049,7 +4113,7 @@ function pbFitTableHeight(wrapEl){
     // אחרת אם הייתה גלילה שיורית מטאב קודם, החישוב "מתנפח" ונדרשת גלילת עמוד נוספת,
     // שגורמת לכל הכרטיס (כולל הכותרת ה"דביקה" בתוכו) לזוז מחוץ לתצוגה.
     const absoluteTop=wrapEl.getBoundingClientRect().top+window.pageYOffset;
-    const bottomMargin=24; // שולי בטיחות מתחת לטבלה
+    const bottomMargin=10; // שולי בטיחות מתחת לטבלה
     const h=Math.max(220,window.innerHeight-absoluteTop-bottomMargin);
     wrapEl.style.maxHeight=h+'px';
   });
