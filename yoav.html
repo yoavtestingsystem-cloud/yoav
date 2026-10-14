@@ -1363,6 +1363,12 @@ body.admin-named .named-admin-only{display:inline-flex}
 .time-range-arrow{font-size:16px;color:var(--muted);flex-shrink:0;align-self:center;margin-bottom:6px}
 
 .dur-chips{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.pbe-dropzone{border:2px dashed var(--border2);border-radius:12px;padding:14px 12px;text-align:center;cursor:pointer;background:var(--surface2);transition:background .15s,border-color .15s,transform .15s;user-select:none}
+.pbe-dropzone:hover{border-color:var(--accent);background:var(--accent-light)}
+.pbe-dropzone.drag{border-color:#059669;background:#ecfdf5;transform:scale(1.01)}
+.pbe-dz-ic{font-size:22px;line-height:1}
+.pbe-dz-txt{font-size:13px;color:var(--text);margin-top:4px}
+.pbe-dz-sub{font-size:11px;color:var(--muted);margin-top:2px}
 .dur-chip{
   background:var(--surface2);border:1.5px solid var(--border2);color:var(--navy);
   border-radius:16px;padding:6px 13px;font-size:11.5px;font-weight:700;
@@ -2121,7 +2127,11 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
       </div>
       <div class="admin-only" style="margin-top:8px">
         <input type="file" id="pbeReportFile" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg" multiple style="display:none" onchange="pbReportFileChosen(this)"/>
-        <button type="button" class="dur-chip" onclick="document.getElementById('pbeReportFile').click()">📤 <span id="pbeReportUploadTxt">העלאת קבצים (אפשר לבחור כמה יחד)</span></button>
+        <div id="pbeDropZone" class="pbe-dropzone" onclick="document.getElementById('pbeReportFile').click()" role="button" tabindex="0">
+          <div class="pbe-dz-ic">📤</div>
+          <div class="pbe-dz-txt"><b>גרור קבצים לכאן</b> או לחץ לבחירה</div>
+          <div class="pbe-dz-sub" id="pbeReportUploadTxt">אפשר כמה קבצים יחד · עד 10MB לקובץ</div>
+        </div>
       </div>
     </div>
 
@@ -2339,7 +2349,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{
 
 <script>
 // ============================================================
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyWyTB6CoybTsnV3rC6kNE6nu3Y3N9FqFZ3iOwLKYcWgXDuiwRULYTkvgFE7KD9Cfk6Ow/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzEQWs9E3Ed0vbWDY_NY6cU3DP90Xg7Do8QC5vxWsn6k-hkXAyReiDHmuRvM1aMSdIL-g/exec';
 // ============================================================
 
 
@@ -3605,7 +3615,11 @@ function pbAddManualLink(){
 }
 // בחירת קובץ/קבצים (אפשר כמה בבת אחת) - רק מוסיף לרשימה, ההעלאה בפועל קורית בזמן השמירה
 function pbReportFileChosen(inputEl){
-  const files=Array.from(inputEl.files||[]);
+  pbAddFiles_(Array.from(inputEl.files||[]));
+  inputEl.value=''; // מאפשר לבחור מחדש אותם קבצים אם צריך
+}
+// הוספת קבצים (מבחירה או מגרירה) לרשימת הצרופות הממתינות
+function pbAddFiles_(files){
   if(!files.length) return;
   const tooBig=files.filter(f=>f.size>10*1024*1024);
   const ok=files.filter(f=>f.size<=10*1024*1024);
@@ -3613,9 +3627,34 @@ function pbReportFileChosen(inputEl){
     toast(`⚠️ ${tooBig.length} קבצים גדולים מדי (מקסימום 10MB) ולא נוספו`,'warn');
   }
   ok.forEach(f=>_pbeAttachments.push({type:'file',label:f.name,file:f}));
-  inputEl.value=''; // מאפשר לבחור מחדש אותם קבצים אם צריך
   pbRenderAttachList();
 }
+// ===== גרירת קבצים לחלון פרטי השורה =====
+(function(){
+  function hasFiles(e){return e.dataTransfer&&Array.from(e.dataTransfer.types||[]).indexOf('Files')>-1;}
+  function init(){
+    const ov=document.getElementById('planBDetailOverlay');
+    const zone=document.getElementById('pbeDropZone');
+    if(!ov||!zone) return;
+    let depth=0;
+    const on=()=>zone.classList.add('drag'), off=()=>{depth=0;zone.classList.remove('drag');};
+    ov.addEventListener('dragenter',e=>{if(!hasFiles(e))return;e.preventDefault();depth++;on();});
+    ov.addEventListener('dragover',e=>{if(!hasFiles(e))return;e.preventDefault();e.dataTransfer.dropEffect='copy';on();});
+    ov.addEventListener('dragleave',e=>{if(!hasFiles(e))return;depth=Math.max(0,depth-1);if(!depth)off();});
+    ov.addEventListener('drop',e=>{
+      if(!hasFiles(e))return;
+      e.preventDefault();off();
+      if(!isAdmin()){toast('אין הרשאה לצרף קבצים','err');return;}
+      pbAddFiles_(Array.from(e.dataTransfer.files||[]));
+    });
+    zone.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();document.getElementById('pbeReportFile').click();}});
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+  // מונע מהדפדפן לפתוח קובץ שנגרר בטעות מחוץ לחלון
+  window.addEventListener('dragover',e=>{if(hasFiles(e))e.preventDefault();});
+  window.addEventListener('drop',e=>{if(hasFiles(e))e.preventDefault();});
+})();
+
 // מעלה קובץ בודד לדרייב ומחזיר את הכתובת שהתקבלה, או null אם נכשל
 async function pbUploadSingleFile_(set,seq,rowIndexFallback,file){
   try{
